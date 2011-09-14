@@ -22,9 +22,10 @@ version 0.1                                                          @gbrindisi
 def main():
     banner()
     usage = "usage: %prog [options]"
+
     parser = OptionParser(usage=usage)
     parser.add_option("-u", "--url", dest="url", help="target URL")
-    parser.add_option("-p", "--payload", dest="payload", help="payload to inject")
+    parser.add_option("-p", "--payload", dest="payload", help="payload to inject. If the payload is not specified standard payloads from lib/payloads.xml will be used")
     parser.add_option("-c", "--check", dest="check", help="payload artefact to search in response")
     (options, args) = parser.parse_args()
     if options.url is None: 
