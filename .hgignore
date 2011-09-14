@@ -1,0 +1,12 @@
+# use glob syntax.
+syntax: glob
+
+*.elc
+*.pyc
+*.DS_Store
+*.py.swp
+*~
+
+# switch to regexp syntax.
+syntax: regexp
+^\.pc/
