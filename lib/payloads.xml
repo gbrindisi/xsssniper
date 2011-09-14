@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+
+<!--
+This file contains XSS Payloads.
+To add neew payload please follow the same structure and remember to encapsulate the raw payload into <![CDATA[ and ]]> to avoid conflicts with the xml parser.
+
+<payload>
+    <raw>Is the raw payload to test</raw>
+    <check>Is the payload artefact to search in the source of the page. It usually is the same as the payload but depends on the encoding used</check>
+    <description>A brief description of the payload</description>
+    <reference>An URL pointing to a reference</url>
+</payload>
+
+Only <raw> is not optional.
+-->
+
+<payloads>
+
+    <payload>
+        <raw><![CDATA[<SCRIPT>WINDOW.ALERT("XSS")</SCRIPT>]]></raw>
+        <check></check>
+        <description></description>
+        <reference></reference>
+    </payload>
+
+</payloads>
+
+
