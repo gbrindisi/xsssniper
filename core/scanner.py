@@ -1,8 +1,18 @@
 #/usr/bin/python
 
-#from urllib2 import Request, urlopen, URLError, HTTPError
-from mechanize import Request, urlopen, URLError, HTTPError,ProxyHandler, build_opener, install_opener, Browser
-import lxml.etree as ET
+try:
+    from michanize import Request, urlopen, URLError, HTTPError,ProxyHandler, build_opener, install_opener, Browser
+except ImportError:
+    print "\n[X] Please install mechanize module:"
+    print "    http://wwwsearch.sourceforge.net/mechanize/\n"
+    exit()
+try:
+    import lxml.etree as ET
+except ImportError:
+    print "\n[X] Please install lxml module:"
+    print "    http://lxml.de/\n"
+    exit()
+
 import os
 import re
 
