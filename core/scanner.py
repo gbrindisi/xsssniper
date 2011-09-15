@@ -83,7 +83,6 @@ class Scanner:
                 for pl in self.getLoadedPayloads():
                     url = target.getPayloadedUrl(k, pl.getPayload())
                     if self.getOption('http-proxy') is not None:
-                        print "Building Proxy"
                         proxy = ProxyHandler({'http': self.getOption('http-proxy')})
                         opener = build_opener(proxy)
                         install_opener(opener)
@@ -98,7 +97,6 @@ class Scanner:
                         print "[X] Error: can't connect"
                     else:
                         result = response.read()
-                        print result
                         if result.find(pl.getCheck()) != -1:
                             print "\n[!] XSS Found:\t%s" % url
                             print "    Payload:\t%s" % pl.getPayload()

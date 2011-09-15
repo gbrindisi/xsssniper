@@ -27,7 +27,7 @@ def main():
     parser.add_option("-u", "--url", dest="url", help="target URL")
     parser.add_option("-p", "--payload", dest="payload", help="payload to inject. If the payload is not specified standard payloads from lib/payloads.xml will be used")
     parser.add_option("-c", "--check", dest="check", help="payload artefact to search in response")
-    parser.add_option("--http-proxy", dest="http_proxy", help="scan behind given proxy (format: 127.0.0.1:80")
+    parser.add_option("--http-proxy", dest="http_proxy", help="scan behind given proxy (format: 127.0.0.1:80)")
     parser.add_option("--tor", dest="tor", default=False, action="store_true", help="scan behind default Tor")
     (options, args) = parser.parse_args()
     if options.url is None: 
