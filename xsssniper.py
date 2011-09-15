@@ -29,6 +29,7 @@ def main():
     parser.add_option("-c", "--check", dest="check", help="payload artefact to search in response")
     parser.add_option("--http-proxy", dest="http_proxy", help="scan behind given proxy (format: 127.0.0.1:80)")
     parser.add_option("--tor", dest="tor", default=False, action="store_true", help="scan behind default Tor")
+    parser.add_option("--crawl", dest="crawl", default=False, action="store_true", help="crawl target url for other links to test")
     (options, args) = parser.parse_args()
     if options.url is None: 
         parser.print_help() 
@@ -53,6 +54,10 @@ def main():
         s.addOption("http-proxy", options.http_proxy)
     elif options.tor is True:
         s.addOption("http-proxy", "127.0.0.1:8118")
+
+    # Do you want to crawl?
+    if options.crawl is True:
+        s.addOption("crawl", True)
 
     # Start the scanning
     s.start()

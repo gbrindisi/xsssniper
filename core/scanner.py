@@ -1,12 +1,14 @@
 #/usr/bin/python
 
 #from urllib2 import Request, urlopen, URLError, HTTPError
-from mechanize import Request, urlopen, URLError, HTTPError,ProxyHandler, build_opener, install_opener
+from mechanize import Request, urlopen, URLError, HTTPError,ProxyHandler, build_opener, install_opener, Browser
 import lxml.etree as ET
 import os
+import re
 
 from core.target import Target
 from core.payload import Payload
+from core.result import Result
 
 class Scanner:
     def __init__(self, payload = None, target = None):
@@ -19,6 +21,7 @@ class Scanner:
 
         self.targets = [] if target is None else [target]
         self.config = {}
+        self.results = []
 
     def addOption(self, key, value):
         if key in self.config:
@@ -30,6 +33,25 @@ class Scanner:
             return self.config[key] 
         else:
             return None
+
+    def addResult(self, result):
+        """
+        Add a result to the scanner
+        """
+        self.results.append(result)
+
+    def getResults(self):
+        """
+        Return the array of results
+        """
+        return self.results
+
+    def printResults(self):
+        """
+        Print every result
+        """
+        for r in self.getResults():
+            r.printResult()
 
     def getLoadedPayloads(self):
         """
@@ -70,15 +92,50 @@ class Scanner:
         """
         self.targets.append(Target(raw_url))
 
+    def crawlTarget(self, target):
+        """
+        Given a Target obj will parse it for links
+        in the same domain and load them as targets in the scanner
+        """
+        br = Browser()
+        print target.getBaseUrl()
+        try: br.open(target.getBaseUrl())
+        except HTTPError, e:
+            print "[X] Error: %s on %s" % (e.code, url)
+        except URLError, e:
+            print "[X] Error: can't connect"
+        else:
+            # Find absolute link in the same domain or replative links
+            links = br.links(url_regex="(^" + target.getBaseUrl() + ".)|(^/{1}.)")
+            new_targets = []
+            for link in links:
+                # Some link parsing
+                if link.url.startswith("http://http://"): link.url.replace("http://http://", "http://")
+                if link.url.startswith("/"): link.url = target.getBaseUrl() +link.url
+                new_targets.append(link.url)
+            # Remove duplicate links
+            new_targets = set(new_targets)
+            print "[-] Found %s unique URLs" % len(new_targets)        
+            for t in new_targets:
+                self.addTarget(t)
+
     def start(self):         
         """
         Main method.
         It test every params in URL of every target against every loaded payload
         """
-        for target in self.getLoadedTargets():
+        if self.getOption('crawl') is not None:
+            print "[+] Crawling for links..."
+            self.crawlTarget(self.getLoadedTargets()[0])
+        print "\n[+] Start scanning...\n"
+
+        for c, target in enumerate(self.getLoadedTargets()):
+            print "[-] Testing %s/%s" % (c+1, len(self.getLoadedTargets()))
+
             if len(target.getParams()) == 0:
-                print "[X] No GET parameters to inject"
-                break
+                # print "[X] No GET parameters to inject"
+                continue
+
             for k, v in target.getParams().iteritems():
                 for pl in self.getLoadedPayloads():
                     url = target.getPayloadedUrl(k, pl.getPayload())
@@ -87,9 +144,10 @@ class Scanner:
                         opener = build_opener(proxy)
                         install_opener(opener)
                     req = Request(url)
-                    print "\n[-] Testing:\t%s" % pl.getPayload()
-                    print "    Param:\t%s" % k
-                    print "    Url:\t%s" % url
+                    # TODO: A verbose option, for now print only when you found something
+                    # print "[-] Testing:\t%s" % pl.getPayload()
+                    # print "    Param:\t%s" % k
+                    # print "    Url:\t%s" % url
                     try: response = urlopen(req)
                     except HTTPError, e:
                         print "[X] Error: %s on %s" % (e.code, url)
@@ -98,23 +156,18 @@ class Scanner:
                     else:
                         result = response.read()
                         if result.find(pl.getCheck()) != -1:
-                            print "\n[!] XSS Found:\t%s" % url
-                            print "    Payload:\t%s" % pl.getPayload()
-                            print "    Check:\t%s" % pl.getCheck()
-                            print "    Desc:\t%s" % pl.getDescription()
-                            print "    Reference:\t%s" % pl.getReference()
+                            r = Result(url, k, pl, 0)
+                            self.addResult(r)
                         elif result.find(pl.getCheck().lower()) != -1:
-                            print "\n[!] XSS Found:\t%s" % url
-                            print "    Payload:\t%s" % pl.getPayload()
-                            print "    Check:\t%s" % pl.getCheck().lower()
-                            print "    Desc:\t%s" % pl.getDescription()
-                            print "    Reference:\t%s" % pl.getReference()
+                            r = Result(url, k, pl, 2)
+                            self.addResult(r)
                         elif result.find(pl.getCheck().upper()) != -1:
-                            print "\n[!] XSS Found:\t%s" % url
-                            print "    Payload:\t%s" % pl.getPayload()
-                            print "    Check:\t%s" % pl.getCheck().upper()
-                            print "    Desc:\t%s" % pl.getDescription()
-                            print "    Reference:\t%s" % pl.getReference()
+                            r = Result(url, k, pl, 1)
+                            self.addResult(r)
                         else:
-                            print "    Nope :("
+                            pass
+
+        # And now the scan is complete
+        print "\n    ... Done!"
+        self.printResults()
 

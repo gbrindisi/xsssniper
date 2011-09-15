@@ -24,8 +24,15 @@ class Target:
         Normalize everything to http
         TODO: Enable networks urls
         """
+        return self.getBaseUrl() + self.path
+
+    def getBaseUrl(self):
+        """
+        Return the base url
+        http://domain
+        """
         url = self.scheme if self.scheme != "" else "http"
-        url += "://" + self.netloc + self.path
+        url += "://" + self.netloc
         return url
 
     def getFullUrl(self):
