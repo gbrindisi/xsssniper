@@ -36,13 +36,13 @@ def main():
     
     if options.payload is not None:
         p = Payload(options.payload, options.check)
-        s = Scanner(p)
+        s = Scanner(p, options.url)
     else:
-        s = Scanner()
+        s = Scanner(target = t)
 
     print "[-] Target:\t %s" % t.getFullUrl()
 
-    s.testTarget(t)
+    s.start()
 
 if __name__ == '__main__':
     main()
