@@ -3,12 +3,7 @@ syntax: glob
 
 *.elc
 *.pyc
-*.pyc.swp
-*.py.swp
+*.*.swp
 .DS_Store
 *~
-
-# switch to regexp syntax.
-syntax: regexp
-^\.pc/
 
