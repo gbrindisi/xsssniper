@@ -11,3 +11,4 @@ syntax: glob
 # switch to regexp syntax.
 syntax: regexp
 ^\.pc/
+
