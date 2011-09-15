@@ -1,7 +1,7 @@
 #/usr/bin/python
 
 #from urllib2 import Request, urlopen, URLError, HTTPError
-from mechanize import Request, urlopen, URLError, HTTPError
+from mechanize import Request, urlopen, URLError, HTTPError,ProxyHandler, build_opener, install_opener
 import lxml.etree as ET
 import os
 
@@ -18,6 +18,18 @@ class Scanner:
             self.payloads.append(payload)
 
         self.targets = [] if target is None else [target]
+        self.config = {}
+
+    def addOption(self, key, value):
+        if key in self.config:
+            del self.config[key]
+        self.config[key] = value
+
+    def getOption(self, key):
+        if key in self.config:
+            return self.config[key] 
+        else:
+            return None
 
     def getLoadedPayloads(self):
         """
@@ -64,9 +76,17 @@ class Scanner:
         It test every params in URL of every target against every loaded payload
         """
         for target in self.getLoadedTargets():
+            if len(target.getParams()) == 0:
+                print "[X] No GET parameters to inject"
+                break
             for k, v in target.getParams().iteritems():
                 for pl in self.getLoadedPayloads():
                     url = target.getPayloadedUrl(k, pl.getPayload())
+                    if self.getOption('http-proxy') is not None:
+                        print "Building Proxy"
+                        proxy = ProxyHandler({'http': self.getOption('http-proxy')})
+                        opener = build_opener(proxy)
+                        install_opener(opener)
                     req = Request(url)
                     print "\n[-] Testing:\t%s" % pl.getPayload()
                     print "    Param:\t%s" % k
@@ -78,6 +98,7 @@ class Scanner:
                         print "[X] Error: can't connect"
                     else:
                         result = response.read()
+                        print result
                         if result.find(pl.getCheck()) != -1:
                             print "\n[!] XSS Found:\t%s" % url
                             print "    Payload:\t%s" % pl.getPayload()

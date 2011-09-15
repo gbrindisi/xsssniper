@@ -27,21 +27,34 @@ def main():
     parser.add_option("-u", "--url", dest="url", help="target URL")
     parser.add_option("-p", "--payload", dest="payload", help="payload to inject. If the payload is not specified standard payloads from lib/payloads.xml will be used")
     parser.add_option("-c", "--check", dest="check", help="payload artefact to search in response")
+    parser.add_option("--http-proxy", dest="http_proxy", help="scan behind given proxy (format: 127.0.0.1:80")
+    parser.add_option("--tor", dest="tor", default=False, action="store_true", help="scan behind default Tor")
     (options, args) = parser.parse_args()
     if options.url is None: 
         parser.print_help() 
         exit()
 
+    # Build a first target
     t = Target(options.url)
-    
+
+    # Build a scanner
     if options.payload is not None:
         p = Payload(options.payload, options.check)
-        s = Scanner(p, options.url)
+        s = Scanner(p, t)
     else:
         s = Scanner(target = t)
 
-    print "[-] Target:\t %s" % t.getFullUrl()
+    # Lets parse options for some proxy setting
+    if options.http_proxy is not None and options.tor is True:
+        print "[X] Yo dawg! I heard you like proxies so i put a proxy in your proxy..."
+        print "    (no --tor and --http-proxy together please!)"
+        exit()
+    elif options.tor is False and options.http_proxy is not None:
+        s.addOption("http-proxy", options.http_proxy)
+    elif options.tor is True:
+        s.addOption("http-proxy", "127.0.0.1:8118")
 
+    # Start the scanning
     s.start()
 
 if __name__ == '__main__':
