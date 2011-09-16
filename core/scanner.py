@@ -1,7 +1,7 @@
 #/usr/bin/python
 
 try:
-    from michanize import Request, urlopen, URLError, HTTPError,ProxyHandler, build_opener, install_opener, Browser
+    from mechanize import Request, urlopen, URLError, HTTPError,ProxyHandler, build_opener, install_opener, Browser
 except ImportError:
     print "\n[X] Please install mechanize module:"
     print "    http://wwwsearch.sourceforge.net/mechanize/\n"
@@ -15,6 +15,9 @@ except ImportError:
 
 import os
 import re
+import Queue
+import threading
+import time
 
 from core.target import Target
 from core.payload import Payload
@@ -29,7 +32,10 @@ class Scanner:
         else:
             self.payloads.append(payload)
 
-        self.targets = [] if target is None else [target]
+        # Initialize the queue of targets
+        self.targets = Queue.Queue()
+        if target is not None: self.targets.put(target)
+
         self.config = {}
         self.results = []
 
@@ -60,8 +66,11 @@ class Scanner:
         """
         Print every result
         """
-        for r in self.getResults():
-            r.printResult()
+        if len(self.getResults()) == 0:
+            print "\n[X] No XSS Found :("
+        else:
+            for r in self.getResults():
+                r.printResult()
 
     def getLoadedPayloads(self):
         """
@@ -100,7 +109,7 @@ class Scanner:
         """
         Append a new target to the array of loaded targets
         """
-        self.targets.append(Target(raw_url))
+        self.targets.put(Target(raw_url))
 
     def crawlTarget(self, target):
         """
@@ -108,7 +117,6 @@ class Scanner:
         in the same domain and load them as targets in the scanner
         """
         br = Browser()
-        print target.getBaseUrl()
         try: br.open(target.getBaseUrl())
         except HTTPError, e:
             print "[X] Error: %s on %s" % (e.code, url)
@@ -134,50 +142,86 @@ class Scanner:
         Main method.
         It test every params in URL of every target against every loaded payload
         """
+
         if self.getOption('crawl') is not None:
             print "[+] Crawling for links..."
-            self.crawlTarget(self.getLoadedTargets()[0])
-        print "\n[+] Start scanning...\n"
+            self.crawlTarget(self.getLoadedTargets().get())
 
-        for c, target in enumerate(self.getLoadedTargets()):
-            print "[-] Testing %s/%s" % (c+1, len(self.getLoadedTargets()))
+        start = time.time()
+        print "\n[+] Start scanning (%s threads)" % self.getOption('threads')
+        for i in range(self.getOption('threads')):
+            t = ScannerThread(self.getLoadedTargets(), self)
+            t.setDaemon(True)
+            t.start()
 
-            if len(target.getParams()) == 0:
-                # print "[X] No GET parameters to inject"
-                continue
-
-            for k, v in target.getParams().iteritems():
-                for pl in self.getLoadedPayloads():
-                    url = target.getPayloadedUrl(k, pl.getPayload())
-                    if self.getOption('http-proxy') is not None:
-                        proxy = ProxyHandler({'http': self.getOption('http-proxy')})
-                        opener = build_opener(proxy)
-                        install_opener(opener)
-                    req = Request(url)
-                    # TODO: A verbose option, for now print only when you found something
-                    # print "[-] Testing:\t%s" % pl.getPayload()
-                    # print "    Param:\t%s" % k
-                    # print "    Url:\t%s" % url
-                    try: response = urlopen(req)
-                    except HTTPError, e:
-                        print "[X] Error: %s on %s" % (e.code, url)
-                    except URLError, e:
-                        print "[X] Error: can't connect"
-                    else:
-                        result = response.read()
-                        if result.find(pl.getCheck()) != -1:
-                            r = Result(url, k, pl, 0)
-                            self.addResult(r)
-                        elif result.find(pl.getCheck().lower()) != -1:
-                            r = Result(url, k, pl, 2)
-                            self.addResult(r)
-                        elif result.find(pl.getCheck().upper()) != -1:
-                            r = Result(url, k, pl, 1)
-                            self.addResult(r)
-                        else:
-                            pass
-
-        # And now the scan is complete
-        print "\n    ... Done!"
+        self.getLoadedTargets().join()
+        print "[-] Scan completed in %s seconds" % (time.time() - start)
         self.printResults()
+
+class ScannerThread(threading.Thread):
+    def __init__(self, queue, scannerengine):
+        threading.Thread.__init__(self)
+        self.queue = queue
+        self.scannerengine = scannerengine
+
+    def getScannerEngine(self):
+        return self.scannerengine
+
+    def run(self):
+        while True:
+            try:
+                target = self.queue.get(block=False)
+            
+            # If queue is empty or whatever
+            except:
+                try:
+                    self.queue.task_done()
+                except ValueError:
+                    # Can't handle this
+                    pass
+
+            # Otherwise...
+            else:
+                # No GET parameters? Skip to next url
+                if len(target.getParams()) == 0:
+                    self.queue.task_done()
+                    continue
+
+                # Check every GET parameter
+                for k, v in target.getParams().iteritems():
+                    for pl in self.getScannerEngine().getLoadedPayloads():
+                        url = target.getPayloadedUrl(k, pl.getPayload())
+                        if self.getScannerEngine().getOption('http-proxy') is not None:
+                            proxy = ProxyHandler({'http': self.getOption('http-proxy')})
+                            opener = build_opener(proxy)
+                            install_opener(opener)
+                        req = Request(url)
+                        # TODO: A verbose option, for now print only when you find something
+                        # print "[-] Testing:\t%s" % pl.getPayload()
+                        # print "    Param:\t%s" % k
+                        # print "    Url:\t%s" % url
+                        try: response = urlopen(req)
+                        except HTTPError, e:
+                            print "[X] Error: %s on %s" % (e.code, url)
+                            continue
+                        except URLError, e:
+                            print "[X] Error: can't connect"
+                            continue
+                        else:
+                            result = response.read()
+                            if result.find(pl.getCheck()) != -1:
+                                r = Result(url, k, pl, 0)
+                                self.getScannerEngine().addResult(r)
+                            elif result.find(pl.getCheck().lower()) != -1:
+                                r = Result(url, k, pl, 2)
+                                self.getScannerEngine().addResult(r)
+                            elif result.find(pl.getCheck().upper()) != -1:
+                                r = Result(url, k, pl, 1)
+                                self.getScannerEngine().addResult(r)
+                            else:
+                                pass
+                
+                # Scan complete                
+                self.queue.task_done()
+
 

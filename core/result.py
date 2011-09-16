@@ -24,8 +24,8 @@ class Result:
 
     def printResult(self):
         print "\n[!] XSS Found:\t%s" % self.url
-        print "   Param:\t%s" % self.param
-        print "   Payload:\t%s" % self.payload.getPayload()
-        print "   Check:\t%s" % self.check
-        print "   Desc:\t%s" % self.payload.getDescription()
-        print "   Reference:\t%s" % self.payload.getReference()
+        print "    Param:\t%s" % self.param
+        print "    Payload:\t%s" % self.payload.getPayload()
+        print "    Check:\t%s" % self.check
+        print "    Desc:\t%s" % self.payload.getDescription()
+        print "    Reference:\t%s" % self.payload.getReference()

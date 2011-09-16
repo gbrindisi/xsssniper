@@ -16,7 +16,15 @@ db    db .d8888. .d8888.      .d8888. d8b   db d888888b d8888b. d88888b d8888b.
 .8P  Y8. db   8D db   8D      db   8D 88  V888   .88.   88      88.     88 `88. 
 YP    YP `8888Y' `8888Y'      `8888Y' VP   V8P Y888888P 88      Y88888P 88   YD
 
-version 0.1                                                          @gbrindisi
+version 0.2                                     Gianluca Brindisi <g@brindi.si>
+                                      https://bitbucket.org/gbrindisi/xsssniper
+
+ -----------------------------------------------------------------------------
+| Scanning targets without prior mutual consent is illegal. It is the end     |
+| user's responsibility to obey all applicable local, state and federal laws. |
+| Authors assume no liability and are not responsible for any misuse or       | 
+| damage caused by this program.                                              |
+ -----------------------------------------------------------------------------
     """
 
 def main():
@@ -27,6 +35,7 @@ def main():
     parser.add_option("-u", "--url", dest="url", help="target URL")
     parser.add_option("-p", "--payload", dest="payload", help="payload to inject. If the payload is not specified standard payloads from lib/payloads.xml will be used")
     parser.add_option("-c", "--check", dest="check", help="payload artefact to search in response")
+    parser.add_option("--threads", dest="threads", default=1, help="number of threads")
     parser.add_option("--http-proxy", dest="http_proxy", help="scan behind given proxy (format: 127.0.0.1:80)")
     parser.add_option("--tor", dest="tor", default=False, action="store_true", help="scan behind default Tor")
     parser.add_option("--crawl", dest="crawl", default=False, action="store_true", help="crawl target url for other links to test")
@@ -58,6 +67,9 @@ def main():
     # Do you want to crawl?
     if options.crawl is True:
         s.addOption("crawl", True)
+
+    # How many threads?
+    s.addOption("threads", int(options.threads))
 
     # Start the scanning
     s.start()
