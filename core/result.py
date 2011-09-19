@@ -14,18 +14,18 @@ class Result:
         self.payload = payload
         if mode is 1:
             self.mode = mode
-            self.check = self.payload.getCheck().uppercase()
+            self.check = self.payload.check.uppercase()
         elif mode is 2:
             self.mode = mode
-            self.check = self.payload.getCheck().lowercase()
+            self.check = self.payload.check.lowercase()
         else:
             self.mode = 0
-            self.check = self.payload.getCheck()
+            self.check = self.payload.check
 
     def printResult(self):
         print "\n[!] XSS Found:\t%s" % self.url
         print "    Param:\t%s" % self.param
-        print "    Payload:\t%s" % self.payload.getPayload()
+        print "    Payload:\t%s" % self.payload.payload
         print "    Check:\t%s" % self.check
-        print "    Desc:\t%s" % self.payload.getDescription()
-        print "    Reference:\t%s" % self.payload.getReference()
+        print "    Desc:\t%s" % self.payload.description
+        print "    Reference:\t%s" % self.payload.reference

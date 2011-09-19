@@ -6,19 +6,14 @@ from urllib import urlencode
 
 class Target:
     def __init__(self, raw_url):
-        self.raw = raw_url
+        self.rawurl = raw_url
 
-        tmp = urlparse(raw_url)
-        
-        self.scheme = tmp.scheme
-        self.netloc = tmp.netloc
-        self.path = tmp.path
-        self.params = parse_qs(tmp.query, True)
+        self.scheme = urlparse(raw_url).scheme
+        self.netloc = urlparse(raw_url).netloc
+        self.path = urlparse(raw_url).path
+        self.params = parse_qs(urlparse(raw_url).query, True)
     
-    def getRawUrl(self):
-        return self.raw
-     
-    def getUrl(self):
+    def getAbsoluteUrl(self):
         """ 
         Build the absolute url.
         Normalize everything to http
@@ -29,29 +24,26 @@ class Target:
     def getBaseUrl(self):
         """
         Return the base url
-        http://domain
+        http://domain.tdl
         """
         url = self.scheme if self.scheme != "" else "http"
         url += "://" + self.netloc
         return url
 
     def getFullUrl(self):
-        return self.getUrl() + urlencode(self.params)
+        return self.getAbsoluteUrl() + urlencode(self.params)
     
-    def getParams(self):
-        return self.params
-
     def getPayloadedUrl(self, target_key, payload):
         """
         Build an absolute url with the given payload in
         the specified parameter
         """
-        new_params = self.getParams().copy()
+        new_params = self.params.copy()
         for k, v in new_params.iteritems():
             if k == target_key:
                 del new_params[k]
                 new_params[k] = v[0] + payload
         encoded_params = urlencode(new_params)
 
-        return self.getUrl() + "?" + encoded_params
+        return self.getAbsoluteUrl() + "?" + encoded_params
 

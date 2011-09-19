@@ -56,27 +56,15 @@ class Scanner:
         """
         self.results.append(result)
 
-    def getResults(self):
-        """
-        Return the array of results
-        """
-        return self.results
-
     def printResults(self):
         """
         Print every result
         """
-        if len(self.getResults()) == 0:
+        if len(self.results) == 0:
             print "\n[X] No XSS Found :("
         else:
-            for r in self.getResults():
+            for r in self.results:
                 r.printResult()
-
-    def getLoadedPayloads(self):
-        """
-        Return the array of loaded payloads
-        """
-        return self.payloads
 
     def addPayload(self, payload, check = None, description = None, reference = None):
         """
@@ -99,12 +87,6 @@ class Scanner:
                 elem.find('reference').text
             )
 
-    def getLoadedTargets(self):
-        """
-        Return the array of loaded targets
-        """
-        return self.targets
-
     def addTarget(self, raw_url):
         """
         Append a new target to the array of loaded targets
@@ -116,12 +98,15 @@ class Scanner:
         Given a Target obj will parse it for links
         in the same domain and load them as targets in the scanner
         """
+        print "[+] Crawling for links..."
         br = Browser()
-        try: br.open(target.getBaseUrl())
+        try: br.open(target.getAbsoluteUrl())
         except HTTPError, e:
-            print "[X] Error: %s on %s" % (e.code, url)
+            print "[X] Error: %s on %s" % (e.code, target.getAbsoluteUrl())
+            print "    Crawl aborted"
         except URLError, e:
             print "[X] Error: can't connect"
+            print "    Crawl aborted"
         else:
             # Find absolute link in the same domain or replative links
             links = br.links(url_regex="(^" + target.getBaseUrl() + ".)|(^/{1}.)")
@@ -129,7 +114,7 @@ class Scanner:
             for link in links:
                 # Some link parsing
                 if link.url.startswith("http://http://"): link.url.replace("http://http://", "http://")
-                if link.url.startswith("/"): link.url = target.getBaseUrl() +link.url
+                if link.url.startswith("/"): link.url = target.getBaseUrl() + link.url
                 new_targets.append(link.url)
             # Remove duplicate links
             new_targets = set(new_targets)
@@ -144,17 +129,16 @@ class Scanner:
         """
 
         if self.getOption('crawl') is not None:
-            print "[+] Crawling for links..."
-            self.crawlTarget(self.getLoadedTargets().get())
+            self.crawlTarget(self.targets.get())
 
         start = time.time()
         print "\n[+] Start scanning (%s threads)" % self.getOption('threads')
         for i in range(self.getOption('threads')):
-            t = ScannerThread(self.getLoadedTargets(), self)
+            t = ScannerThread(self.targets, self)
             t.setDaemon(True)
             t.start()
 
-        self.getLoadedTargets().join()
+        self.targets.join()
         print "[-] Scan completed in %s seconds" % (time.time() - start)
         self.printResults()
 
@@ -163,9 +147,6 @@ class ScannerThread(threading.Thread):
         threading.Thread.__init__(self)
         self.queue = queue
         self.scannerengine = scannerengine
-
-    def getScannerEngine(self):
-        return self.scannerengine
 
     def run(self):
         while True:
@@ -183,15 +164,15 @@ class ScannerThread(threading.Thread):
             # Otherwise...
             else:
                 # No GET parameters? Skip to next url
-                if len(target.getParams()) == 0:
+                if len(target.params) == 0:
                     self.queue.task_done()
                     continue
 
                 # Check every GET parameter
-                for k, v in target.getParams().iteritems():
-                    for pl in self.getScannerEngine().getLoadedPayloads():
-                        url = target.getPayloadedUrl(k, pl.getPayload())
-                        if self.getScannerEngine().getOption('http-proxy') is not None:
+                for k, v in target.params.iteritems():
+                    for pl in self.scannerengine.payloads:
+                        url = target.getPayloadedUrl(k, pl.payload)
+                        if self.scannerengine.getOption('http-proxy') is not None:
                             proxy = ProxyHandler({'http': self.getOption('http-proxy')})
                             opener = build_opener(proxy)
                             install_opener(opener)
@@ -209,15 +190,15 @@ class ScannerThread(threading.Thread):
                             continue
                         else:
                             result = response.read()
-                            if result.find(pl.getCheck()) != -1:
+                            if result.find(pl.check) != -1:
                                 r = Result(url, k, pl, 0)
-                                self.getScannerEngine().addResult(r)
-                            elif result.find(pl.getCheck().lower()) != -1:
+                                self.scannerengine.addResult(r)
+                            elif result.find(pl.check.lower()) != -1:
                                 r = Result(url, k, pl, 2)
-                                self.getScannerEngine().addResult(r)
-                            elif result.find(pl.getCheck().upper()) != -1:
+                                self.scannerengine.addResult(r)
+                            elif result.find(pl.check.upper()) != -1:
                                 r = Result(url, k, pl, 1)
-                                self.getScannerEngine().addResult(r)
+                                self.scannerengine.addResult(r)
                             else:
                                 pass
                 
