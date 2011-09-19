@@ -11,6 +11,7 @@ class Result:
         """
         self.url = url
         self.param = param
+        self.method = method
         self.payload = payload
         if mode is 1:
             self.mode = mode
@@ -24,6 +25,7 @@ class Result:
 
     def printResult(self):
         print "\n[!] XSS Found:\t%s" % self.url
+        print "    Method:\t%s" % self.method
         print "    Param:\t%s" % self.param
         print "    Payload:\t%s" % self.payload.payload
         print "    Check:\t%s" % self.check

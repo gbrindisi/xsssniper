@@ -16,7 +16,7 @@ db    db .d8888. .d8888.      .d8888. d8b   db d888888b d8888b. d88888b d8888b.
 .8P  Y8. db   8D db   8D      db   8D 88  V888   .88.   88      88.     88 `88. 
 YP    YP `8888Y' `8888Y'      `8888Y' VP   V8P Y888888P 88      Y88888P 88   YD
 
-version 0.2                                     Gianluca Brindisi <g@brindi.si>
+version 0.3                                     Gianluca Brindisi <g@brindi.si>
                                       https://bitbucket.org/gbrindisi/xsssniper
 
  -----------------------------------------------------------------------------
@@ -41,6 +41,7 @@ def main():
     parser.add_option("--http-proxy", dest="http_proxy", help="scan behind given proxy (format: 127.0.0.1:80)")
     parser.add_option("--tor", dest="tor", default=False, action="store_true", help="scan behind default Tor")
     parser.add_option("--crawl", dest="crawl", default=False, action="store_true", help="crawl target url for other links to test")
+    parser.add_option("--forms", dest="forms", default=False, action="store_true", help="crawl target url for other links to test")
     (options, args) = parser.parse_args()
     if options.url is None: 
         parser.print_help() 
@@ -78,6 +79,10 @@ def main():
     # Do you want to crawl?
     if options.crawl is True:
         s.addOption("crawl", True)
+
+    # Do you want to crawl forms?
+    if options.forms is True:
+        s.addOption("forms", True)
 
     # How many threads?
     s.addOption("threads", int(options.threads))

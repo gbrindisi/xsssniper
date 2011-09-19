@@ -87,11 +87,11 @@ class Scanner:
                 elem.find('reference').text
             )
 
-    def addTarget(self, raw_url):
+    def addTarget(self, raw_url, method = 'GET', data = None):
         """
         Append a new target to the array of loaded targets
         """
-        self.targets.put(Target(raw_url))
+        self.targets.put(Target(raw_url, method, data))
 
     def crawlTarget(self, target):
         """
@@ -122,6 +122,31 @@ class Scanner:
             for t in new_targets:
                 self.addTarget(t)
 
+    def crawlForms(self, targets):
+        """
+        Crawl targets for forms
+        target must be a list
+        """
+        print "\n[+] Crawling for forms..."
+        br = Browser()
+        new_targets = []
+        for t in targets:
+            try: br.open(t.getAbsoluteUrl())
+            except HTTPError, e:
+                print "[X] Error: %s on %s" % (e.code, t.getAbsoluteUrl())
+            except URLError, e:
+                print "[X] Error: can't connect"
+            else:
+                forms = br.forms()
+                for form in forms:
+                    form_data = form.click_request_data()
+                    new_targets.append([form_data[0], form_data[1]])
+        # Now remove duplicates:
+        new_targets = dict((x[0], x) for x in new_targets).values()
+        print "[-] Found %s unique forms" % len(new_targets)
+        for nt in new_targets:
+            self.addTarget(nt[0], method = 'POST', data = nt[1])
+
     def start(self):         
         """
         Main method.
@@ -130,6 +155,9 @@ class Scanner:
 
         if self.getOption('crawl') is not None:
             self.crawlTarget(self.targets.get())
+
+        if self.getOption('forms') is not None:
+            self.crawlForms([self.targets.get()])
 
         start = time.time()
         print "\n[+] Start scanning (%s threads)" % self.getOption('threads')
@@ -173,7 +201,6 @@ class ScannerThread(threading.Thread):
                 for k, v in target.params.iteritems():
                     for pl in self.scannerengine.payloads:
                         url, data = target.getPayloadedUrl(k, pl.payload)
-                        print "%s and %s" % (url, data)
                         if self.scannerengine.getOption('http-proxy') is not None:
                             proxy = ProxyHandler({'http': self.getOption('http-proxy')})
                             opener = build_opener(proxy)
