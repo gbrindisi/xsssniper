@@ -35,6 +35,8 @@ def main():
     parser.add_option("-u", "--url", dest="url", help="target URL")
     parser.add_option("-p", "--payload", dest="payload", help="payload to inject. If the payload is not specified standard payloads from lib/payloads.xml will be used")
     parser.add_option("-c", "--check", dest="check", help="payload artefact to search in response")
+    parser.add_option("--post", dest="post", default=False, action="store_true", help="try a post request to target url")
+    parser.add_option("--data", dest="post_data", help="posta data to use")
     parser.add_option("--threads", dest="threads", default=1, help="number of threads")
     parser.add_option("--http-proxy", dest="http_proxy", help="scan behind given proxy (format: 127.0.0.1:80)")
     parser.add_option("--tor", dest="tor", default=False, action="store_true", help="scan behind default Tor")
@@ -45,7 +47,16 @@ def main():
         exit()
 
     # Build a first target
-    t = Target(options.url)
+    if options.post is True:
+        if options.post_data is not None:
+            t = Target(options.url, method = 'POST', data = options.post_data)
+        else:
+            print "[X] No POST data specified: use --data"
+            exit()
+    else:
+        t = Target(options.url)
+
+
 
     # Build a scanner
     if options.payload is not None:

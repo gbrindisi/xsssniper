@@ -163,20 +163,22 @@ class ScannerThread(threading.Thread):
 
             # Otherwise...
             else:
-                # No GET parameters? Skip to next url
+                # No GET/POST parameters? Skip to next url
                 if len(target.params) == 0:
+                    print "[X] No paramaters to inject"
                     self.queue.task_done()
                     continue
 
-                # Check every GET parameter
+                # Check every parameter
                 for k, v in target.params.iteritems():
                     for pl in self.scannerengine.payloads:
-                        url = target.getPayloadedUrl(k, pl.payload)
+                        url, data = target.getPayloadedUrl(k, pl.payload)
+                        print "%s and %s" % (url, data)
                         if self.scannerengine.getOption('http-proxy') is not None:
                             proxy = ProxyHandler({'http': self.getOption('http-proxy')})
                             opener = build_opener(proxy)
                             install_opener(opener)
-                        req = Request(url)
+                        req = Request(url, data)
                         # TODO: A verbose option, for now print only when you find something
                         # print "[-] Testing:\t%s" % pl.getPayload()
                         # print "    Param:\t%s" % k
@@ -191,13 +193,13 @@ class ScannerThread(threading.Thread):
                         else:
                             result = response.read()
                             if result.find(pl.check) != -1:
-                                r = Result(url, k, pl, 0)
+                                r = Result(url, k, target.method, pl, 0)
                                 self.scannerengine.addResult(r)
                             elif result.find(pl.check.lower()) != -1:
-                                r = Result(url, k, pl, 2)
+                                r = Result(url, k, target.method, pl, 2)
                                 self.scannerengine.addResult(r)
                             elif result.find(pl.check.upper()) != -1:
-                                r = Result(url, k, pl, 1)
+                                r = Result(url, k, target.method, pl, 1)
                                 self.scannerengine.addResult(r)
                             else:
                                 pass

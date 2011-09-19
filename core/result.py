@@ -3,7 +3,7 @@ class Result:
     A Result represent a successful XSS injection.
     Used to clean the Scanner and handle printing
     """
-    def __init__(self, url, param, payload, mode):
+    def __init__(self, url, param, method, payload, mode):
         """
         Mode: 0 normal check
               1 uppercase check
