@@ -1,14 +1,14 @@
-#/usr/bin/python
+#/usr/bin/env python
 
 import os
 from optparse import OptionParser
 
 from core.target import Target
-from core.payload import Payload
 from core.scanner import Scanner
 
 def banner():
     print """
+
 db    db .d8888. .d8888.      .d8888. d8b   db d888888b d8888b. d88888b d8888b. 
 `8b  d8' 88'  YP 88'  YP      88'  YP 888o  88   `88'   88  `8D 88'     88  `8D 
  `8bd8'  `8bo.   `8bo.        `8bo.   88V8o 88    88    88oodD' 88ooooo 88oobY' 
@@ -16,8 +16,8 @@ db    db .d8888. .d8888.      .d8888. d8b   db d888888b d8888b. d88888b d8888b.
 .8P  Y8. db   8D db   8D      db   8D 88  V888   .88.   88      88.     88 `88. 
 YP    YP `8888Y' `8888Y'      `8888Y' VP   V8P Y888888P 88      Y88888P 88   YD
 
-version 0.3                                     Gianluca Brindisi <g@brindi.si>
-                                      https://bitbucket.org/gbrindisi/xsssniper
+----[ version 0.4                         Gianluca Brindisi <g@brindi.si> ]----
+                                                     https://brindi.si/g/ ]----
 
  -----------------------------------------------------------------------------
 | Scanning targets without prior mutual consent is illegal. It is the end     |
@@ -33,8 +33,7 @@ def main():
 
     parser = OptionParser(usage=usage)
     parser.add_option("-u", "--url", dest="url", help="target URL")
-    parser.add_option("-p", "--payload", dest="payload", help="payload to inject. If the payload is not specified standard payloads from lib/payloads.xml will be used")
-    parser.add_option("-c", "--check", dest="check", help="payload artefact to search in response")
+    parser.add_option("-t", "--type", dest="type", default=1, help="XSS type: 1 reflected, 2 stored")
     parser.add_option("--post", dest="post", default=False, action="store_true", help="try a post request to target url")
     parser.add_option("--data", dest="post_data", help="posta data to use")
     parser.add_option("--threads", dest="threads", default=1, help="number of threads")
@@ -47,6 +46,10 @@ def main():
         parser.print_help() 
         exit()
 
+    # Type disclaimer
+    if options.type is not 1:
+        print "[X] Note: Actually only reflected XSS detection is supported. Sorry."
+         
     # Build a first target
     if options.post is True:
         if options.post_data is not None:
@@ -57,14 +60,8 @@ def main():
     else:
         t = Target(options.url)
 
-
-
     # Build a scanner
-    if options.payload is not None:
-        p = Payload(options.payload, options.check)
-        s = Scanner(p, t)
-    else:
-        s = Scanner(target = t)
+    s = Scanner(t)
 
     # Lets parse options for some proxy setting
     if options.http_proxy is not None and options.tor is True:

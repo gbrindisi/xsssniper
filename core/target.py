@@ -1,4 +1,4 @@
-#/usr/bin/python
+#/usr/bin/env python
 
 from urlparse import urlparse
 from urlparse import parse_qs

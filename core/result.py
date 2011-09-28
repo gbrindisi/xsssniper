@@ -1,3 +1,5 @@
+#/usr/bin/env python
+
 class Result:
     """
     A Result represent a successful XSS injection.
@@ -11,8 +13,8 @@ class Result:
         self.injectiontype = injectiontype
 
     def printResult(self):
-        print "\n[!] XSS Found:\t%s" % self.url
-        print "    Method:\t%s" % self.method
+        print "\n[!] URL:\t%s" % self.url
+        print "    Type:\t%s" % self.injectiontype[1]
         print "    Param:\t%s" % self.param
-        print "    Taint:\t%s" % self.taint
-        print "    Injection Type:\t%s" % self.injectiontype
+        print "    Method:\t%s" % self.method
+        #print "    Taint:\t%s" % self.taint

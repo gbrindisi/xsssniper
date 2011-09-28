@@ -1,16 +1,10 @@
-#/usr/bin/python
+#/usr/bin/env python
 
 try:
     from mechanize import Request, urlopen, URLError, HTTPError,ProxyHandler, build_opener, install_opener, Browser
 except ImportError:
     print "\n[X] Please install mechanize module:"
     print "    http://wwwsearch.sourceforge.net/mechanize/\n"
-    exit()
-try:
-    import lxml.etree as ET
-except ImportError:
-    print "\n[X] Please install lxml module:"
-    print "    http://lxml.de/\n"
     exit()
 
 import os
@@ -22,22 +16,12 @@ import random
 import string
 
 from core.target import Target
-from core.payload import Payload
 from core.result import Result
 
 class Scanner:
-    def __init__(self, payload = None, target = None):
-        self.payloads = [] 
-        if payload is None:
-            # Uber dirty trick to get payloads.xml path
-            self.parsePayloadsFromFile(os.path.dirname(os.path.realpath(__file__))[:-4]+ "lib/payloads.xml")
-        else:
-            self.payloads.append(payload)
-
-        # Initialize the queue of targets
+    def __init__(self, target = None):
         self.targets = Queue.Queue()
         if target is not None: self.targets.put(target)
-
         self.config = {}
         self.results = []
 
@@ -65,29 +49,9 @@ class Scanner:
         if len(self.results) == 0:
             print "\n[X] No XSS Found :("
         else:
+            print "\n[!] Found %s XSS Injection points" % len(self.results)
             for r in self.results:
                 r.printResult()
-
-    def addPayload(self, payload, check = None, description = None, reference = None):
-        """
-        Append a new payload to the array of loaded payloads
-        """
-        self.payloads.append(Payload(payload, check, description, reference))
-
-    def parsePayloadsFromFile(self, file):
-        """
-        Parse an xml file for payloads and append 
-        them to the array of loaded payloads
-        """
-        tree = ET.parse(file)
-        document = tree.getroot()
-        for elem in document:
-            self.addPayload(
-                elem.find('raw').text,
-                elem.find('check').text,
-                elem.find('description').text,
-                elem.find('reference').text
-            )
 
     def addTarget(self, raw_url, method = 'GET', data = None):
         """
@@ -102,10 +66,13 @@ class Scanner:
         """
         print "[+] Crawling for links..."
         br = Browser()
+        if self.getOption('http-proxy') is not None:
+            br.set_proxies({'http': self.getOption('http-proxy')})
         try: br.open(target.getAbsoluteUrl())
         except HTTPError, e:
             print "[X] Error: %s on %s" % (e.code, target.getAbsoluteUrl())
             print "    Crawl aborted"
+            exit()
         except URLError, e:
             print "[X] Error: can't connect"
             print "    Crawl aborted"
@@ -132,12 +99,18 @@ class Scanner:
         print "\n[+] Crawling for forms..."
         br = Browser()
         new_targets = []
+        if self.getOption('http-proxy') is not None:
+            br.set_proxies({'http': self.getOption('http-proxy')})
         for t in targets:
             try: br.open(t.getAbsoluteUrl())
             except HTTPError, e:
                 print "[X] Error: %s on %s" % (e.code, t.getAbsoluteUrl())
+                print "    Crawl aborted"
+                exit()
             except URLError, e:
                 print "[X] Error: can't connect"
+                print "    Crawl aborted"
+                exit()
             else:
                 forms = br.forms()
                 for form in forms:
@@ -152,7 +125,6 @@ class Scanner:
     def start(self):         
         """
         Main method.
-        It test every params in URL of every target against every loaded payload
         """
 
         if self.getOption('crawl') is not None:
@@ -230,7 +202,7 @@ class ScannerThread(threading.Thread):
                 """ 
                 if htmlstate == 1 and response[index+seed_len:index+seed_len+seed_len+1] == " " + seed + "=":
                     index = index + seed_len
-                    result.append(1)
+                    result.append([1, "In tag: <tag foo=bar onload=...>"])
                     continue
 
                 """
@@ -240,7 +212,7 @@ class ScannerThread(threading.Thread):
                 """
                 if htmlurl and response[index+seed_len:index+seed_len+seed_len+1] == ":" + seed:
                     index = index + seed_len
-                    result.append(2)
+                    result.append([2, "In url: <tag src=foo:bar ...>"])
                     continue
 
                 """
@@ -250,7 +222,7 @@ class ScannerThread(threading.Thread):
                 """
                 if htmlstate == 0 and response[index+seed_len:index+seed_len+seed_len+1] == "<" + seed:
                     index  = index + seed_len
-                    result.append(3)
+                    result.append([3, "No filter evasion: <tag><script>..."])
                     continue
 
                 """
@@ -260,16 +232,17 @@ class ScannerThread(threading.Thread):
                 """
                 if (htmlstate == 1 or htmlstate == 2) and response[index+seed_len:index+seed_len+seed_len] == "\"" + seed:
                     index = index + seed_len
-                    result.append(4)
+                    result.append([4, "Inside double quotes: <tag foo=\"bar\"onload=...>"])
                     continue
 
                 """
                 XSS found inside single quotes
                 <tag foo='bar'onload=...>
+                type 5
                 """
                 if (htmlstate == 1 or htmlstate == 4) and response[index+seed_len:index+seed_len+seed_len] == "'" + seed:
                     index  = index + seed_len
-                    result.append(5)
+                    result.append([5, "Inside signle quotes: <tag foo='bar'onload=...>"])
                     continue
 
             else:
@@ -357,43 +330,46 @@ class ScannerThread(threading.Thread):
 
         """ End of response parsing """
         return result
-
-
-
             
     def run(self):
         while True:
             try:
                 target = self.queue.get(block=False)
-            
-            """ If queue is empty or whatever """
             except:
                 try:
                     self.queue.task_done()
                 except ValueError:
-                    """ Can't handle this """
+                    """ 
+                    Can't handle this 
+                    """
                     pass
-
-            """ Otherwise... """
             else:
-                """ No GET/POST parameters? Skip to next url """
+                """ 
+                No GET/POST parameters? Skip to next url 
+                """
                 if len(target.params) == 0:
                     print "[X] No paramaters to inject"
                     self.queue.task_done()
                     continue
 
-                """ Check every parameter """
+                """ 
+                Check every parameter 
+                """
                 for k, v in target.params.iteritems():
                     seed_len = 4 #TODO: control over this
                     seed = ''.join(random.choice(string.ascii_letters + string.digits) for x in range(seed_len)).lower()
                     taint = "{0}:{0} {0}=-->{0}\"{0}>{0}'{0}>{0}+{0}<{0}>".format(seed)
                     url, data = target.getPayloadedUrl(k, taint)
-                    """ In case of proxy """
+                    """ 
+                    In case of proxy 
+                    """
                     if self.scannerengine.getOption('http-proxy') is not None:
-                        proxy = ProxyHandler({'http': self.getOption('http-proxy')})
+                        proxy = ProxyHandler({'http': self.scannerengine.getOption('http-proxy')})
                         opener = build_opener(proxy)
                         install_opener(opener)
-                    """ Build the request """
+                    """ 
+                    Build the request 
+                    """
                     req = Request(url, data)
                     try: response = urlopen(req)
                     except HTTPError, e:
@@ -405,7 +381,7 @@ class ScannerThread(threading.Thread):
                     else:
                         result = self.processResponse(response, seed)
                         for r in result:
-                            self.scannerengine.addResult(Result(url, k, target.method, taint, r))
+                            self.scannerengine.addResult(Result(target.getPayloadedUrl(k, "")[0], k, target.method, taint, r))
                 
                 # Scan complete                
                 self.queue.task_done()

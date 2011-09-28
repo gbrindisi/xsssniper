@@ -1,3 +1,7 @@
+0.4:
+- Refactored the scanning engine, now faster with fewer request and lower FP rates
+- Removed the payloads architecture
+
 0.3:
 - Added support for POST requests with --post and --data
 - Added form crawling with --crawl
