@@ -124,7 +124,8 @@ class Scanner:
 
     def start(self):         
         """
-        Main method.
+        Eventually crawl links and form, then
+        spawn threads to handle the scanning
         """
 
         if self.getOption('crawl') is not None:
@@ -152,6 +153,8 @@ class ScannerThread(threading.Thread):
 
     def processResponse(self, response, seed):
         """
+        Given a response object it search and return XSS injection.
+
         How it works: we parse the response sequentially
         looking for the seed while keeping
         a state of the current position to determine if we have
@@ -163,141 +166,114 @@ class ScannerThread(threading.Thread):
         htmlstate = 0
         htmlurl = 0
         index = 0
-
-        """
-        An array of xss identifiers
-        they are int... needs improvement
-        """
         result = []
 
-        """ 
-        Building the taint and the response
-        I want everything lowercase because I don't want to handle 
-        cases when the payload is upper/lowercased by the webserver
-        """
+        # Building the taint and the response
+        # I want everything lowercase because I don't want to handle 
+        # cases when the payload is upper/lowercased by the webserver
         seed_len = len(seed)
         taint = "{0}:{0} {0}=-->{0}\"{0}>{0}'{0}>{0}+{0}<{0}>".format(seed)
         response = response.read().lower()
 
-        """
-        Now start the scanning
-        htmlstate legend:
-        - 1 index is in tag
-        - 2 index is inside double quotes
-        - 4 index is inside single quotes
-        - 8 index is inside html comment
-        - 16 index is inside cdata
-        """
+        # Now start the scanning
+        # htmlstate legend:
+        # - 1 index is in tag
+        # - 2 index is inside double quotes
+        # - 4 index is inside single quotes
+        # - 8 index is inside html comment
+        # - 16 index is inside cdata
         while index <= len(response)-1:
-            """
-            Exit cases for a match against the taint
-            If conditions are a little messy...
-            TODO: utf-7 xss
-            """
+            # Exit cases for a match against the taint
+            # If conditions are a little messy...
+            # TODO: utf-7 xss
             if response[index:index+seed_len] == seed:
-                """
-                XSS found in tag
-                <tag foo=bar onload=...>
-                type 1
-                """ 
+                # XSS found in tag
+                # <tag foo=bar onload=...>
+                # type 1
                 if htmlstate == 1 and response[index+seed_len:index+seed_len+seed_len+1] == " " + seed + "=":
                     index = index + seed_len
                     result.append([1, "In tag: <tag foo=bar onload=...>"])
                     continue
 
-                """
-                XSS found in url
-                <tag src=foo:bar ...>
-                type 2
-                """
+                # XSS found in url
+                # <tag src=foo:bar ...>
+                # type 2
                 if htmlurl and response[index+seed_len:index+seed_len+seed_len+1] == ":" + seed:
                     index = index + seed_len
                     result.append([2, "In url: <tag src=foo:bar ...>"])
                     continue
 
-                """
-                XSS found freely in response
-                <tag><script>...
-                type 3
-                """
+                # XSS found freely in response
+                # <tag><script>...
+                # type 3
                 if htmlstate == 0 and response[index+seed_len:index+seed_len+seed_len+1] == "<" + seed:
                     index  = index + seed_len
                     result.append([3, "No filter evasion: <tag><script>..."])
                     continue
 
-                """
-                XSS found inside double quotes
-                <tag foo="bar"onload=...>
-                type 4
-                """
+                # XSS found inside double quotes
+                # <tag foo="bar"onload=...>
+                # type 4
                 if (htmlstate == 1 or htmlstate == 2) and response[index+seed_len:index+seed_len+seed_len] == "\"" + seed:
                     index = index + seed_len
                     result.append([4, "Inside double quotes: <tag foo=\"bar\"onload=...>"])
                     continue
 
-                """
-                XSS found inside single quotes
-                <tag foo='bar'onload=...>
-                type 5
-                """
+                # XSS found inside single quotes
+                # <tag foo='bar'onload=...>
+                # type 5
                 if (htmlstate == 1 or htmlstate == 4) and response[index+seed_len:index+seed_len+seed_len] == "'" + seed:
                     index  = index + seed_len
                     result.append([5, "Inside signle quotes: <tag foo='bar'onload=...>"])
                     continue
 
             else:
-                """
-                We are in a CDATA block
-                """
-                if (htmlstate == 0 and response[index:index+9] == "<![CDATA["):
+                # We are in a CDATA block
+                if htmlstate == 0 and response[index:index+9] == "<![CDATA[":
                     htmlstate = 16
                     index = index + 9
                     continue
+
                 if htmlstate == 16 and response[index:index+3] == "]]>":
                     htmlstate = 0
                     index = index + 3
                     continue
 
-                """
-                We are in a html comment
-                """
+                # We are in a html comment
                 if htmlstate == 0 and response[index:index+4] == "<!--":
                     htmlstate = 8
                     index = index + 4
                     continue
+
                 if htmlstate == 8 and response[index:index+3] == "-->":
                     htmlstate = 0
                     index = index + 3
                     continue
 
-                """
-                We are in a tag
-                """
+                # We are in a tag
                 if htmlstate == 0 and response[index] == "<" and (response[index+1] == "!" or response[index+1] == "?" or response[index+1].isalpha()):
                     htmlstate = 1
                     index = index + 1
                     continue
+
                 if htmlstate == 1 and response[index] == ">":
                     htmlstate = 0
                     htmlurl = 0
                     index = index + 1
                     continue
 
-                """
-                We are inside a double quote
-                """
+                # We are inside a double quote
                 if htmlstate == 1 and response[index] == '"' and response[index-1] == '=':
                     htmlstate = 2
                     index = index + 1
                     continue
+
                 if (htmlstate == 1 or htmlstate == 2) and response[index] == '"':
                     htmlstate = 1
                     index = index + 1
                     continue
 
-                """
-                We are inside a single quote
-                """
+                # We are inside a single quote
                 if htmlstate == 1 and response[index] == '\'' and response[index-1] == '=':
                     htmlstate = 4
                     index = index + 1
@@ -308,30 +284,29 @@ class ScannerThread(threading.Thread):
                     index = index + 1
                     continue
 
-                """
-                We are inside an url
-                """
+                # We are inside an url
                 if htmlstate == 1 and response[index-1] == " " and response[index:index+5] == "href=":
                     htmlurl = 1
                     index = index + 5 
                     continue
+
                 if htmlstate == 1 and response[index-1] == " " and response[index:index+5] == "src=":
                     htmlurl = 1
                     index = index + 4
                     continue
 
-                """
-                In case the url isn't correctly closed
-                """
-                if htmlurl == 1: htmlurl = 0
+                # In case the url isn't correctly closed
+                if htmlurl == 1: 
+                    htmlurl = 0
 
-            """ Move on """
+            # Move on
             index = index +1
 
-        """ End of response parsing """
+        # End of response parsing
         return result
             
     def run(self):
+        """ Main code of the thread """
         while True:
             try:
                 target = self.queue.get(block=False)
@@ -339,37 +314,29 @@ class ScannerThread(threading.Thread):
                 try:
                     self.queue.task_done()
                 except ValueError:
-                    """ 
-                    Can't handle this 
-                    """
+                    # Can't handle this 
                     pass
             else:
-                """ 
-                No GET/POST parameters? Skip to next url 
-                """
+                # No GET/POST parameters? Skip to next url 
                 if len(target.params) == 0:
                     print "[X] No paramaters to inject"
                     self.queue.task_done()
                     continue
 
-                """ 
-                Check every parameter 
-                """
+                # Check every parameter 
                 for k, v in target.params.iteritems():
-                    seed_len = 4 #TODO: control over this
+                    seed_len = 4
                     seed = ''.join(random.choice(string.ascii_letters + string.digits) for x in range(seed_len)).lower()
                     taint = "{0}:{0} {0}=-->{0}\"{0}>{0}'{0}>{0}+{0}<{0}>".format(seed)
                     url, data = target.getPayloadedUrl(k, taint)
-                    """ 
-                    In case of proxy 
-                    """
+                     
+                    # In case of proxy 
                     if self.scannerengine.getOption('http-proxy') is not None:
                         proxy = ProxyHandler({'http': self.scannerengine.getOption('http-proxy')})
                         opener = build_opener(proxy)
                         install_opener(opener)
-                    """ 
-                    Build the request 
-                    """
+                    
+                    # Build the request 
                     req = Request(url, data)
                     try: response = urlopen(req)
                     except HTTPError, e:
