@@ -14,6 +14,7 @@ import threading
 import time
 import random
 import string
+import sys
 
 from core.target import Target
 from core.result import Result
@@ -78,13 +79,30 @@ class Scanner:
             print "    Crawl aborted"
         else:
             # Find absolute link in the same domain or replative links
-            links = br.links(url_regex="(^" + target.getBaseUrl() + ".)|(^/{1}.)")
+            #links = br.links(url_regex="(^" + target.getBaseUrl() + ".)|(^/{1}.)|(^[a-zA-Z0-9]{1}")
+            links = br.links()
             new_targets = []
+
+            # Some link parsing
             for link in links:
-                # Some link parsing
-                if link.url.startswith("http://http://"): link.url.replace("http://http://", "http://")
-                if link.url.startswith("/"): link.url = target.getBaseUrl() + link.url
-                new_targets.append(link.url)
+                if link.url.startswith(target.getBaseUrl()):
+                    # Local Absolute url
+                    new_targets.append(link.url)
+                    continue
+                elif link.url.startswith("/"):
+                    # Local Relative url, starting with /
+                    link.url = target.getBaseUrl() + link.url
+                    new_targets.append(link.url)
+                    continue
+                elif link.url.startswith("http://") or link.url.startswith("www."):
+                    # Absolute external links starting with http:// or www.
+                    continue
+                else:
+                    # Everything else, should only be local urls not starting with /
+                    # If it's not the case they'll return 404 - i can live with that
+                    link.url = target.getBaseUrl() + "/" + link.url
+                    new_targets.append(link.url)
+            
             # Remove duplicate links
             new_targets = set(new_targets)
             print "[-] Found %s unique URLs" % len(new_targets)        
@@ -127,7 +145,6 @@ class Scanner:
         Eventually crawl links and form, then
         spawn threads to handle the scanning
         """
-
         if self.getOption('crawl') is not None:
             self.crawlTarget(self.targets.get())
 
@@ -136,15 +153,31 @@ class Scanner:
 
         start = time.time()
         print "\n[+] Start scanning (%s threads)" % self.getOption('threads')
+
+        threads = []
         for i in range(self.getOption('threads')):
             t = ScannerThread(self.targets, self)
             t.setDaemon(True)
+            threads.append(t)
             t.start()
-
+      
+        # Little hack to kill threads on SIGINT
+        while True:
+            try:
+                if self.targets.empty() is True:
+                    print "\n"
+                    break
+                sys.stdout.write("\r    Remaining urls: %s" % self.targets.qsize())
+                sys.stdout.flush()
+            except KeyboardInterrupt:
+                print "[X] Interrupt! Killing threads..."
+                self.targets = Queue.Queue()
+                break
+        
         self.targets.join()
         print "[-] Scan completed in %s seconds" % (time.time() - start)
         self.printResults()
-
+        
 class ScannerThread(threading.Thread):
     def __init__(self, queue, scannerengine):
         threading.Thread.__init__(self)
@@ -163,6 +196,7 @@ class ScannerThread(threading.Thread):
         This is based on ratproxy XSS scanning technique so
         all the props to @lcamtuf for this.
         """
+
         htmlstate = 0
         htmlurl = 0
         index = 0
@@ -309,17 +343,17 @@ class ScannerThread(threading.Thread):
         """ Main code of the thread """
         while True:
             try:
-                target = self.queue.get(block=False)
+                target = self.queue.get(timeout=1)
             except:
                 try:
                     self.queue.task_done()
                 except ValueError:
-                    # Can't handle this 
+                    # Can't handle this
                     pass
             else:
                 # No GET/POST parameters? Skip to next url 
                 if len(target.params) == 0:
-                    print "[X] No paramaters to inject"
+                    # print "[X] No paramaters to inject"
                     self.queue.task_done()
                     continue
 
@@ -329,7 +363,6 @@ class ScannerThread(threading.Thread):
                     seed = ''.join(random.choice(string.ascii_letters + string.digits) for x in range(seed_len)).lower()
                     taint = "{0}:{0} {0}=-->{0}\"{0}>{0}'{0}>{0}+{0}<{0}>".format(seed)
                     url, data = target.getPayloadedUrl(k, taint)
-                     
                     # In case of proxy 
                     if self.scannerengine.getOption('http-proxy') is not None:
                         proxy = ProxyHandler({'http': self.scannerengine.getOption('http-proxy')})
@@ -338,7 +371,9 @@ class ScannerThread(threading.Thread):
                     
                     # Build the request 
                     req = Request(url, data)
-                    try: response = urlopen(req)
+                    try:
+                        to = 10 if self.scannerengine.getOption('http-proxy') is None else 20
+                        response = urlopen(req, timeout=to)
                     except HTTPError, e:
                         print "[X] Error: %s on %s" % (e.code, url)
                         continue
@@ -350,7 +385,9 @@ class ScannerThread(threading.Thread):
                         for r in result:
                             self.scannerengine.addResult(Result(target.getPayloadedUrl(k, "")[0], k, target.method, taint, r))
                 
-                # Scan complete                
-                self.queue.task_done()
-
+                # Scan complete
+                try:                
+                    self.queue.task_done()
+                except ValueError:
+                    pass
 

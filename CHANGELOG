@@ -1,6 +1,11 @@
+0.5:
+- Added SIGINT support in multithread enviroment
+- Improved links parsing in crawling
+- Added a progress notification bar while scanning
+
 0.4:
 - Refactored the scanning engine, now faster with fewer request and lower FP rates
-- Removed the payloads architecture
+- Removed the payloads architecture (-p and -c)
 
 0.3:
 - Added support for POST requests with --post and --data
