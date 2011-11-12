@@ -20,9 +20,6 @@ from core.target import Target
 from core.result import Result
 from core.constants import USER_AGENTS
 
-import httplib
-
-
 class Scanner:
     def __init__(self, target = None):
         self.targets = Queue.Queue()
@@ -71,9 +68,6 @@ class Scanner:
         """
         print "[+] Crawling for links..."
         br = Browser()
-        br.set_debug_responses(True)
-        br.set_debug_http(True)
-        br.set_debug_redirects(True)
         if self.getOption('http-proxy') is not None:
             br.set_proxies({'http': self.getOption('http-proxy')})
         if self.getOption('ua') is not None:
