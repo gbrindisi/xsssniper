@@ -40,7 +40,7 @@ def main():
     parser.add_option("--http-proxy", dest="http_proxy", help="scan behind given proxy (format: 127.0.0.1:80)")
     parser.add_option("--tor", dest="tor", default=False, action="store_true", help="scan behind default Tor")
     parser.add_option("--crawl", dest="crawl", default=False, action="store_true", help="crawl target url for other links to test")
-    parser.add_option("--forms", dest="forms", default=False, action="store_true", help="crawl target url for other links to test")
+    parser.add_option("--forms", dest="forms", default=False, action="store_true", help="crawl target url looking for forms to test")
     parser.add_option("--user-agent", dest="user_agent", help="provide an user agent")
     parser.add_option("--random-agent", dest="random_agent", default=False, action="store_true", help="perform scan with random user agents")
 

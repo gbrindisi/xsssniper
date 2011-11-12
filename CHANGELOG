@@ -1,3 +1,7 @@
+0.6:
+- Added support for custom user agent with --user-agent
+- Added support for random user agents with --random-agents
+
 0.5:
 - Added SIGINT support in multithread enviroment
 - Improved links parsing in crawling
