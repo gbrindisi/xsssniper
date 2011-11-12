@@ -41,6 +41,9 @@ def main():
     parser.add_option("--tor", dest="tor", default=False, action="store_true", help="scan behind default Tor")
     parser.add_option("--crawl", dest="crawl", default=False, action="store_true", help="crawl target url for other links to test")
     parser.add_option("--forms", dest="forms", default=False, action="store_true", help="crawl target url for other links to test")
+    parser.add_option("--user-agent", dest="user_agent", help="provide an user agent")
+    parser.add_option("--random-agent", dest="random_agent", default=False, action="store_true", help="perform scan with random user agents")
+
     (options, args) = parser.parse_args()
     if options.url is None: 
         parser.print_help() 
@@ -80,6 +83,15 @@ def main():
     # Do you want to crawl forms?
     if options.forms is True:
         s.addOption("forms", True)
+
+    # User Agent option provided?
+    if options.user_agent is not None and options.random_agent is True:
+        print "[X] Not sure what user agent you want..."
+        print "    (no --user-agent and --random-agent together please!)"
+    elif options.random_agent is False and options.user_agent is not None:
+        s.addOption("ua", options.user_agent)
+    elif options.random_agent is True:
+        s.addOption("ua", "RANDOM")
 
     # How many threads?
     s.addOption("threads", int(options.threads))

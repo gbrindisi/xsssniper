@@ -18,6 +18,10 @@ import sys
 
 from core.target import Target
 from core.result import Result
+from core.constants import USER_AGENTS
+
+import httplib
+
 
 class Scanner:
     def __init__(self, target = None):
@@ -67,8 +71,16 @@ class Scanner:
         """
         print "[+] Crawling for links..."
         br = Browser()
+        br.set_debug_responses(True)
+        br.set_debug_http(True)
+        br.set_debug_redirects(True)
         if self.getOption('http-proxy') is not None:
             br.set_proxies({'http': self.getOption('http-proxy')})
+        if self.getOption('ua') is not None:
+            if self.getOption('ua') is "RANDOM":
+                br.addheaders = [('User-Agent', random.choice(USER_AGENTS))]
+            else:
+                br.addheaders = [('User-Agent', self.getOption('ua'))]
         try: br.open(target.getAbsoluteUrl())
         except HTTPError, e:
             print "[X] Error: %s on %s" % (e.code, target.getAbsoluteUrl())
@@ -78,7 +90,7 @@ class Scanner:
             print "[X] Error: can't connect"
             print "    Crawl aborted"
         else:
-            # Find absolute link in the same domain or replative links
+            # Find absolute link in the same domain or relative links
             #links = br.links(url_regex="(^" + target.getBaseUrl() + ".)|(^/{1}.)|(^[a-zA-Z0-9]{1}")
             links = br.links()
             new_targets = []
@@ -119,6 +131,11 @@ class Scanner:
         new_targets = []
         if self.getOption('http-proxy') is not None:
             br.set_proxies({'http': self.getOption('http-proxy')})
+        if self.getOption('ua') is not None:
+            if self.getOption('ua') is "RANDOM":
+                br.addheaders = [('User-Agent', random.choice(USER_AGENTS))]
+            else:
+                br.addheaders = [('User-Agent', self.getOption('ua'))]
         for t in targets:
             try: br.open(t.getAbsoluteUrl())
             except HTTPError, e:
@@ -153,7 +170,7 @@ class Scanner:
 
         start = time.time()
         print "\n[+] Start scanning (%s threads)" % self.getOption('threads')
-
+        
         threads = []
         for i in range(self.getOption('threads')):
             t = ScannerThread(self.targets, self)
@@ -368,12 +385,18 @@ class ScannerThread(threading.Thread):
                         proxy = ProxyHandler({'http': self.scannerengine.getOption('http-proxy')})
                         opener = build_opener(proxy)
                         install_opener(opener)
-                    
-                    # Build the request 
-                    req = Request(url, data)
+                    # Some headers
+                    if self.scannerengine.getOption('ua') is not None:
+                        if self.scannerengine.getOption('ua') is "RANDOM":
+                            headers = {'User-Agent': random.choice(USER_AGENTS)}
+                        else:
+                            headers = {'User-Agent': self.scannerengine.getOption('ua')}
+                    # Build the request
+                    req = Request(url, data, headers)
                     try:
                         to = 10 if self.scannerengine.getOption('http-proxy') is None else 20
                         response = urlopen(req, timeout=to)
+                        print response.read()
                     except HTTPError, e:
                         print "[X] Error: %s on %s" % (e.code, url)
                         continue
