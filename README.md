@@ -1,6 +1,6 @@
 #XSSSNIPER
 
-xsssniper is an handy xss scanner capable of mass scanning functionalities
+xsssniper is an handy xss discovery tool with mass scanning functionalities.
 
 ##USAGE:
 
