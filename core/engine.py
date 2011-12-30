@@ -1,4 +1,4 @@
-#/usr/bin/env python
+#! /usr/bin/env python
 
 try:
     from mechanize import Request, urlopen, URLError, HTTPError,ProxyHandler, build_opener, install_opener, Browser
@@ -18,14 +18,21 @@ import sys
 
 from core.target import Target
 from core.result import Result
+from core.crawler import Crawler
 from core.constants import USER_AGENTS
 
-class Scanner:
+class Engine:
     def __init__(self, target = None):
-        self.targets = Queue.Queue()
-        if target is not None: self.targets.put(target)
+        self.targets = []
+        if target is not None: self.targets.append(target)
         self.config = {}
         self.results = []
+
+    def _getTargetsQueue(self):
+        queue = Queue.Queue()
+        for t in self.targets:
+            queue.put(t)
+        return queue
 
     def addOption(self, key, value):
         if key in self.config:
@@ -59,97 +66,86 @@ class Scanner:
         """
         Append a new target to the array of loaded targets
         """
-        self.targets.put(Target(raw_url, method, data))
+        self.targets.append(Target(raw_url, method, data))
 
-    def crawlTarget(self, target):
-        """
-        Given a Target obj will parse it for links
-        in the same domain and load them as targets in the scanner
-        """
-        print "[+] Crawling for links..."
-        br = Browser()
-        if self.getOption('http-proxy') is not None:
-            br.set_proxies({'http': self.getOption('http-proxy')})
-        if self.getOption('ua') is not None:
-            if self.getOption('ua') is "RANDOM":
-                br.addheaders = [('User-Agent', random.choice(USER_AGENTS))]
-            else:
-                br.addheaders = [('User-Agent', self.getOption('ua'))]
-        try: br.open(target.getAbsoluteUrl())
-        except HTTPError, e:
-            print "[X] Error: %s on %s" % (e.code, target.getAbsoluteUrl())
-            print "    Crawl aborted"
-            exit()
-        except URLError, e:
-            print "[X] Error: can't connect"
-            print "    Crawl aborted"
-        else:
-            # Find absolute link in the same domain or relative links
-            #links = br.links(url_regex="(^" + target.getBaseUrl() + ".)|(^/{1}.)|(^[a-zA-Z0-9]{1}")
-            links = br.links()
-            new_targets = []
+    def crawlTarget(self):
+        print "[+] Crawling links..."
 
-            # Some link parsing
-            for link in links:
-                if link.url.startswith(target.getBaseUrl()):
-                    # Local Absolute url
-                    new_targets.append(link.url)
-                    continue
-                elif link.url.startswith("/"):
-                    # Local Relative url, starting with /
-                    link.url = target.getBaseUrl() + link.url
-                    new_targets.append(link.url)
-                    continue
-                elif link.url.startswith("http://") or link.url.startswith("www."):
-                    # Absolute external links starting with http:// or www.
-                    continue
-                else:
-                    # Everything else, should only be local urls not starting with /
-                    # If it's not the case they'll return 404 - i can live with that
-                    link.url = target.getBaseUrl() + "/" + link.url
-                    new_targets.append(link.url)
-            
-            # Remove duplicate links
-            new_targets = set(new_targets)
-            print "[-] Found %s unique URLs" % len(new_targets)        
-            for t in new_targets:
-                self.addTarget(t)
+        # Build a queue and start crawlers 
+        queue = self._getTargetsQueue()
+        crawlers = []
+        for i in range(min(self.getOption('threads'), len(self.targets))):
+            c = Crawler(self, queue, crawl_links=True)
+            c.setDaemon(True)
+            crawlers.append(c)
+            c.start()
+      
+        # Little hack to kill threads on SIGINT
+        while True:
+            try:
+                if queue.empty() is True:
+                    break
+                sys.stdout.write("\r    Remaining targets: %s" % queue.qsize())
+                sys.stdout.flush()
+            except KeyboardInterrupt:
+                print "[X] Interrupt! Killing threads..."
+                queue = Queue.Queue()
+                break
+        
+        queue.join()
 
-    def crawlForms(self, targets):
-        """
-        Crawl targets for forms
-        target must be a list
-        """
-        print "\n[+] Crawling for forms..."
-        br = Browser()
-        new_targets = []
-        if self.getOption('http-proxy') is not None:
-            br.set_proxies({'http': self.getOption('http-proxy')})
-        if self.getOption('ua') is not None:
-            if self.getOption('ua') is "RANDOM":
-                br.addheaders = [('User-Agent', random.choice(USER_AGENTS))]
-            else:
-                br.addheaders = [('User-Agent', self.getOption('ua'))]
-        for t in targets:
-            try: br.open(t.getAbsoluteUrl())
-            except HTTPError, e:
-                print "[X] Error: %s on %s" % (e.code, t.getAbsoluteUrl())
-                print "    Crawl aborted"
-                exit()
-            except URLError, e:
-                print "[X] Error: can't connect"
-                print "    Crawl aborted"
-                exit()
-            else:
-                forms = br.forms()
-                for form in forms:
-                    form_data = form.click_request_data()
-                    new_targets.append([form_data[0], form_data[1]])
-        # Now remove duplicates:
-        new_targets = dict((x[0], x) for x in new_targets).values()
-        print "[-] Found %s unique forms" % len(new_targets)
-        for nt in new_targets:
-            self.addTarget(nt[0], method = 'POST', data = nt[1])
+        # Harvest results
+        results = []
+        for c in crawlers:
+            for r in c.results:
+                results.append(r)
+
+        results = set(results)
+
+        print "[-] Found %s unique targets." % len(results)
+
+        # Add targets
+        for t in results:
+            self.targets.append(t)
+
+    def crawlForms(self):
+        print "[+] Crawling for forms..."
+         
+        queue = self._getTargetsQueue()
+        crawlers = []
+        for i in range(min(self.getOption('threads'), len(self.targets))):
+            c = Crawler(self, queue, crawl_forms=True)
+            c.setDaemon(True)
+            crawlers.append(c)
+            c.start()
+      
+        # Little hack to kill threads on SIGINT
+        while True:
+            try:
+                if queue.empty() is True:
+                    break
+                sys.stdout.write("\r    Remaining targets: %s" % queue.qsize())
+                sys.stdout.flush()
+            except KeyboardInterrupt:
+                print "[X] Interrupt! Killing threads..."
+                queue = Queue.Queue()
+                break
+        
+        queue.join()
+
+        # Harvest results
+        results = []
+        for c in crawlers:
+            for r in c.results:
+                results.append(r)
+
+        results = set(results)
+
+        print "[-] Found %s unique forms." % len(results)
+
+        # Add targets
+        for t in results:
+            self.targets.append(t)
 
     def start(self):         
         """
@@ -157,17 +153,18 @@ class Scanner:
         spawn threads to handle the scanning
         """
         if self.getOption('crawl') is not None:
-            self.crawlTarget(self.targets.get())
+            self.crawlTarget()
 
         if self.getOption('forms') is not None:
-            self.crawlForms([self.targets.get()])
-
+            self.crawlForms()
+        
         start = time.time()
         print "\n[+] Start scanning (%s threads)" % self.getOption('threads')
         
         threads = []
+        queue = self._getTargetsQueue()
         for i in range(self.getOption('threads')):
-            t = ScannerThread(self.targets, self)
+            t = ScannerThread(queue, self)
             t.setDaemon(True)
             threads.append(t)
             t.start()
@@ -175,17 +172,17 @@ class Scanner:
         # Little hack to kill threads on SIGINT
         while True:
             try:
-                if self.targets.empty() is True:
+                if queue.empty() is True:
                     print "\n"
                     break
-                sys.stdout.write("\r    Remaining urls: %s" % self.targets.qsize())
+                sys.stdout.write("\r    Remaining urls: %s" % queue.qsize())
                 sys.stdout.flush()
             except KeyboardInterrupt:
                 print "[X] Interrupt! Killing threads..."
-                self.targets = Queue.Queue()
+                queue = Queue.Queue()
                 break
         
-        self.targets.join()
+        queue.join()
         print "[-] Scan completed in %s seconds" % (time.time() - start)
         self.printResults()
         
@@ -407,4 +404,3 @@ class ScannerThread(threading.Thread):
                     self.queue.task_done()
                 except ValueError:
                     pass
-
