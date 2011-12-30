@@ -4,7 +4,7 @@ import os
 from optparse import OptionParser
 
 from core.target import Target
-from core.scanner import Scanner
+from core.engine import Engine
 
 def banner():
     print """
@@ -64,7 +64,7 @@ def main():
         t = Target(options.url)
 
     # Build a scanner
-    s = Scanner(t)
+    s = Engine(t)
 
     # Lets parse options for some proxy setting
     if options.http_proxy is not None and options.tor is True:
