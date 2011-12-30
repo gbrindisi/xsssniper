@@ -2,7 +2,6 @@
 
 import os
 from optparse import OptionParser
-
 from core.target import Target
 from core.engine import Engine
 

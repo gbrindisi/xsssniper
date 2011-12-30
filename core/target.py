@@ -1,4 +1,4 @@
-#/usr/bin/env python
+#!/usr/bin/env python
 
 from urlparse import urlparse
 from urlparse import parse_qs
@@ -16,10 +16,19 @@ class Target:
         self.netloc = urlparse(raw_url).netloc
         self.path = urlparse(raw_url).path
         self.method = method
-        if method is 'POST':
+        if method is 'POST' and data is not None:
             self.params = parse_qs(data, True)
         else:
             self.params = parse_qs(urlparse(raw_url).query, True)
+
+    def __eq__(self, other):
+        if self.getFullUrl() == other.getFullUrl(): 
+            return True
+        else:
+            return False
+
+    def __hash__(self):
+        return hash(self.getFullUrl())
 
     def getAbsoluteUrl(self):
         """ 
