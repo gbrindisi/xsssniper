@@ -46,12 +46,6 @@ class Engine:
         else:
             return None
 
-    def addResult(self, result):
-        """
-        Add a result to the scanner
-        """
-        self.results.append(result)
-
     def printResults(self):
         """
         Print every result
@@ -62,12 +56,6 @@ class Engine:
             print "\n[!] Found %s XSS Injection points" % len(self.results)
             for r in self.results:
                 r.printResult()
-
-    def addTarget(self, raw_url, method = 'GET', data = None):
-        """
-        Append a new target to the array of loaded targets
-        """
-        self.targets.append(Target(raw_url, method, data))
 
     def crawlTarget(self):
         print "[+] Crawling links..."
