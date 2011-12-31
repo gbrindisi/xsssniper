@@ -48,7 +48,7 @@ class Crawler(threading.Thread):
             print "[X] Crawl Error: %s on %s" % (e.code, target.getAbsoluteUrl())
             return False 
         except URLError, e:
-            print "[X] Crawl Error: %s" % (e.code)
+            print "[X] Crawl Error: %s" % e.reason
             return False
         else:
             try:
@@ -95,7 +95,7 @@ class Crawler(threading.Thread):
             print "[X] Crawl Error: %s on %s" % (e.code, target.getAbsoluteUrl())
             return False
         except URLError, e:
-            print "[X] Crawl Error: %s" % (e.code)
+            print "[X] Crawl Error: %s" % (e.reason)
             return False
         else:
             try: 
