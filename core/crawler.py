@@ -45,10 +45,13 @@ class Crawler(threading.Thread):
         
         try: self.browser.open(target.getAbsoluteUrl())
         except HTTPError, e:
-            print "[X] Crawl Error: %s on %s" % (e.code, target.getAbsoluteUrl())
+            print "[X] Crawler Error: %s on %s" % (e.code, target.getAbsoluteUrl())
             return False 
         except URLError, e:
-            print "[X] Crawl Error: %s" % e.reason
+            print "[X] Crawler Error: %s" % e.reason
+            return False
+        except:
+            print "[X] Crawler Error: unknown"
             return False
         else:
             try:
@@ -92,10 +95,13 @@ class Crawler(threading.Thread):
 
         try: self.browser.open(target.getAbsoluteUrl())
         except HTTPError, e:
-            print "[X] Crawl Error: %s on %s" % (e.code, target.getAbsoluteUrl())
+            print "[X] Crawler Error: %s on %s" % (e.code, target.getAbsoluteUrl())
             return False
         except URLError, e:
-            print "[X] Crawl Error: %s" % (e.reason)
+            print "[X] Crawler Error: %s" % (e.reason)
+            return False
+        except:
+            print "[X] Crawler Error: unknown"
             return False
         else:
             try: 

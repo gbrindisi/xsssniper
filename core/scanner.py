@@ -221,10 +221,13 @@ class Scanner(threading.Thread):
                         to = 10 if self.engine.getOption('http-proxy') is None else 20
                         response = urlopen(req, timeout=to)
                     except HTTPError, e:
-                        print "[X] Error: %s on %s" % (e.code, url)
+                        print "[X] Scanner Error: %s on %s" % (e.code, url)
                         continue
                     except URLError, e:
-                        print "[X] Error: can't connect"
+                        print "[X] Scanner  Error: %s" % e.reason
+                        continue
+                    except:
+                        print "[X] Scanner Error: unknown"
                         continue
                     else:
                         result = self.processResponse(response, seed)
