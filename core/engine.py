@@ -382,12 +382,14 @@ class ScannerThread(threading.Thread):
                             headers = {'User-Agent': random.choice(USER_AGENTS)}
                         else:
                             headers = {'User-Agent': self.scannerengine.getOption('ua')}
+                    else:
+                        headers = {}
+
                     # Build the request
                     req = Request(url, data, headers)
                     try:
                         to = 10 if self.scannerengine.getOption('http-proxy') is None else 20
                         response = urlopen(req, timeout=to)
-                        print response.read()
                     except HTTPError, e:
                         print "[X] Error: %s on %s" % (e.code, url)
                         continue
