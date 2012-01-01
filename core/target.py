@@ -22,8 +22,11 @@ class Target:
             self.params = parse_qs(urlparse(raw_url).query, True)
 
     def __eq__(self, other):
-        if self.getFullUrl() == other.getFullUrl(): 
-            return True
+        if self.getFullUrl() == other.getFullUrl():
+            if self.params.keys() == other.params.keys(): 
+                return True
+            else:
+                return False
         else:
             return False
 
