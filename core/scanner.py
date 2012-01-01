@@ -232,7 +232,7 @@ class Scanner(threading.Thread):
                     else:
                         result = self.processResponse(response, seed)
                         for r in result:
-                            self.results.append(Result(target.getPayloadedUrl(k, "")[0], k, target.method, taint, r))
+                            self.results.append(Result(target, k, taint, r))
                 
                 # Scan complete
                 try:                

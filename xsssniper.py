@@ -96,7 +96,8 @@ def main():
     s.addOption("threads", int(options.threads))
 
     # Start the scanning
-    s.start()
+    if s.start():
+        exit()
 
 if __name__ == '__main__':
     main()

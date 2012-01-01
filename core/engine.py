@@ -35,6 +35,21 @@ class Engine:
             queue.put(t)
         return queue
 
+    def _compactResults(self):
+        temp_results = []
+        for result in self.results:
+            found = False
+            for temp_result in temp_results:
+                if temp_result.target == result.target:
+                    temp_result.merge(result)
+                    found = True
+                    break
+            if not found:
+                temp_results.append(result)
+
+        self.results = temp_results
+        return True
+
     def addOption(self, key, value):
         if key in self.config:
             del self.config[key]
@@ -53,7 +68,7 @@ class Engine:
         if len(self.results) == 0:
             print "\n[X] No XSS Found :("
         else:
-            print "\n[!] Found %s XSS Injection points" % len(self.results)
+            print "\n[!] Found XSS Injection points in %s targets" % len(self.results)
             for r in self.results:
                 r.printResult()
 
@@ -152,7 +167,7 @@ class Engine:
         
         threads = []
         queue = self._getTargetsQueue()
-        for i in range(self.getOption('threads')):
+        for i in range(min(self.getOption('threads'), len(self.targets))):
             t = Scanner(self, queue)
             t.setDaemon(True)
             threads.append(t)
@@ -183,5 +198,10 @@ class Engine:
         # Add results to engine
         for r in results:
             self.results.append(r)
-
-        self.printResults()
+        
+        print "[+] Processing results..."
+        if self._compactResults():
+            self.printResults()
+            return True
+        else:
+            return False
