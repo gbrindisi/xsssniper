@@ -14,6 +14,7 @@ import string
 from core.constants import USER_AGENTS
 from core.result import Result
 from core.target import Target
+from core.payload import Payload
 
 class Scanner(threading.Thread):
     def __init__(self, engine, queue):
@@ -23,7 +24,7 @@ class Scanner(threading.Thread):
 
         self.results = []
 
-    def processResponse(self, response, seed):
+    def processResponse(self, response, payload):
         """
         Given a response object it search and return XSS injection.
 
@@ -36,147 +37,153 @@ class Scanner(threading.Thread):
         all the props to @lcamtuf for this.
         """
 
-        htmlstate = 0
-        htmlurl = 0
-        index = 0
-        result = []
+        # It only works for payloads of type taint (temporary)
+        if payload.taint:
+            htmlstate = 0
+            htmlurl = 0
+            index = 0
+            result = []
 
-        # Building the taint and the response
-        # I want everything lowercase because I don't want to handle 
-        # cases when the payload is upper/lowercased by the webserver
-        seed_len = len(seed)
-        taint = "{0}:{0} {0}=-->{0}\"{0}>{0}'{0}>{0}+{0}<{0}>".format(seed)
-        response = response.read().lower()
+            # Building the taint and the response
+            # I want everything lowercase because I don't want to handle 
+            # cases when the payload is upper/lowercased by the webserver
+            seed_len = payload.seed_len
+            seed = payload.seed
+            response = response.read().lower()
 
-        # Now start the scanning
-        # htmlstate legend:
-        # - 1 index is in tag
-        # - 2 index is inside double quotes
-        # - 4 index is inside single quotes
-        # - 8 index is inside html comment
-        # - 16 index is inside cdata
-        while index <= len(response)-1:
-            # Exit cases for a match against the taint
-            # If conditions are a little messy...
-            # TODO: utf-7 xss
-            if response[index:index+seed_len] == seed:
-                # XSS found in tag
-                # <tag foo=bar onload=...>
-                # type 1
-                if htmlstate == 1 and response[index+seed_len:index+seed_len+seed_len+1] == " " + seed + "=":
-                    index = index + seed_len
-                    result.append([1, "In tag: <tag foo=bar onload=...>"])
-                    continue
+            # Now start the scanning
+            # htmlstate legend:
+            # - 1 index is in tag
+            # - 2 index is inside double quotes
+            # - 4 index is inside single quotes
+            # - 8 index is inside html comment
+            # - 16 index is inside cdata
+            while index <= len(response)-1:
+                # Exit cases for a match against the taint
+                # If conditions are a little messy...
+                # TODO: utf-7 xss
+                if response[index:index+seed_len] == seed:
+                    # XSS found in tag
+                    # <tag foo=bar onload=...>
+                    # type 1
+                    if htmlstate == 1 and response[index+seed_len:index+seed_len+seed_len+1] == " " + seed + "=":
+                        index = index + seed_len
+                        result.append([1, "In tag: <tag foo=bar onload=...>"])
+                        continue
 
-                # XSS found in url
-                # <tag src=foo:bar ...>
-                # type 2
-                if htmlurl and response[index+seed_len:index+seed_len+seed_len+1] == ":" + seed:
-                    index = index + seed_len
-                    result.append([2, "In url: <tag src=foo:bar ...>"])
-                    continue
+                    # XSS found in url
+                    # <tag src=foo:bar ...>
+                    # type 2
+                    if htmlurl and response[index+seed_len:index+seed_len+seed_len+1] == ":" + seed:
+                        index = index + seed_len
+                        result.append([2, "In url: <tag src=foo:bar ...>"])
+                        continue
 
-                # XSS found freely in response
-                # <tag><script>...
-                # type 3
-                if htmlstate == 0 and response[index+seed_len:index+seed_len+seed_len+1] == "<" + seed:
-                    index  = index + seed_len
-                    result.append([3, "No filter evasion: <tag><script>..."])
-                    continue
+                    # XSS found freely in response
+                    # <tag><script>...
+                    # type 3
+                    if htmlstate == 0 and response[index+seed_len:index+seed_len+seed_len+1] == "<" + seed:
+                        index  = index + seed_len
+                        result.append([3, "No filter evasion: <tag><script>..."])
+                        continue
 
-                # XSS found inside double quotes
-                # <tag foo="bar"onload=...>
-                # type 4
-                if (htmlstate == 1 or htmlstate == 2) and response[index+seed_len:index+seed_len+seed_len] == "\"" + seed:
-                    index = index + seed_len
-                    result.append([4, "Inside double quotes: <tag foo=\"bar\"onload=...>"])
-                    continue
+                    # XSS found inside double quotes
+                    # <tag foo="bar"onload=...>
+                    # type 4
+                    if (htmlstate == 1 or htmlstate == 2) and response[index+seed_len:index+seed_len+seed_len] == "\"" + seed:
+                        index = index + seed_len
+                        result.append([4, "Inside double quotes: <tag foo=\"bar\"onload=...>"])
+                        continue
 
-                # XSS found inside single quotes
-                # <tag foo='bar'onload=...>
-                # type 5
-                if (htmlstate == 1 or htmlstate == 4) and response[index+seed_len:index+seed_len+seed_len] == "'" + seed:
-                    index  = index + seed_len
-                    result.append([5, "Inside signle quotes: <tag foo='bar'onload=...>"])
-                    continue
+                    # XSS found inside single quotes
+                    # <tag foo='bar'onload=...>
+                    # type 5
+                    if (htmlstate == 1 or htmlstate == 4) and response[index+seed_len:index+seed_len+seed_len] == "'" + seed:
+                        index  = index + seed_len
+                        result.append([5, "Inside signle quotes: <tag foo='bar'onload=...>"])
+                        continue
 
-            else:
-                # We are in a CDATA block
-                if htmlstate == 0 and response[index:index+9] == "<![CDATA[":
-                    htmlstate = 16
-                    index = index + 9
-                    continue
+                else:
+                    # We are in a CDATA block
+                    if htmlstate == 0 and response[index:index+9] == "<![CDATA[":
+                        htmlstate = 16
+                        index = index + 9
+                        continue
 
-                if htmlstate == 16 and response[index:index+3] == "]]>":
-                    htmlstate = 0
-                    index = index + 3
-                    continue
+                    if htmlstate == 16 and response[index:index+3] == "]]>":
+                        htmlstate = 0
+                        index = index + 3
+                        continue
 
-                # We are in a html comment
-                if htmlstate == 0 and response[index:index+4] == "<!--":
-                    htmlstate = 8
-                    index = index + 4
-                    continue
+                    # We are in a html comment
+                    if htmlstate == 0 and response[index:index+4] == "<!--":
+                        htmlstate = 8
+                        index = index + 4
+                        continue
 
-                if htmlstate == 8 and response[index:index+3] == "-->":
-                    htmlstate = 0
-                    index = index + 3
-                    continue
+                    if htmlstate == 8 and response[index:index+3] == "-->":
+                        htmlstate = 0
+                        index = index + 3
+                        continue
 
-                # We are in a tag
-                if htmlstate == 0 and response[index] == "<" and (response[index+1] == "!" or response[index+1] == "?" or response[index+1].isalpha()):
-                    htmlstate = 1
-                    index = index + 1
-                    continue
+                    # We are in a tag
+                    if htmlstate == 0 and response[index] == "<" and (response[index+1] == "!" or response[index+1] == "?" or response[index+1].isalpha()):
+                        htmlstate = 1
+                        index = index + 1
+                        continue
 
-                if htmlstate == 1 and response[index] == ">":
-                    htmlstate = 0
-                    htmlurl = 0
-                    index = index + 1
-                    continue
+                    if htmlstate == 1 and response[index] == ">":
+                        htmlstate = 0
+                        htmlurl = 0
+                        index = index + 1
+                        continue
 
-                # We are inside a double quote
-                if htmlstate == 1 and response[index] == '"' and response[index-1] == '=':
-                    htmlstate = 2
-                    index = index + 1
-                    continue
+                    # We are inside a double quote
+                    if htmlstate == 1 and response[index] == '"' and response[index-1] == '=':
+                        htmlstate = 2
+                        index = index + 1
+                        continue
 
-                if (htmlstate == 1 or htmlstate == 2) and response[index] == '"':
-                    htmlstate = 1
-                    index = index + 1
-                    continue
+                    if (htmlstate == 1 or htmlstate == 2) and response[index] == '"':
+                        htmlstate = 1
+                        index = index + 1
+                        continue
 
-                # We are inside a single quote
-                if htmlstate == 1 and response[index] == '\'' and response[index-1] == '=':
-                    htmlstate = 4
-                    index = index + 1
-                    continue
+                    # We are inside a single quote
+                    if htmlstate == 1 and response[index] == '\'' and response[index-1] == '=':
+                        htmlstate = 4
+                        index = index + 1
+                        continue
 
-                if (htmlstate == 1 or htmlstate == 4) and response[index] == '\'':
-                    htmlstate = 1
-                    index = index + 1
-                    continue
+                    if (htmlstate == 1 or htmlstate == 4) and response[index] == '\'':
+                        htmlstate = 1
+                        index = index + 1
+                        continue
 
-                # We are inside an url
-                if htmlstate == 1 and response[index-1] == " " and response[index:index+5] == "href=":
-                    htmlurl = 1
-                    index = index + 5 
-                    continue
+                    # We are inside an url
+                    if htmlstate == 1 and response[index-1] == " " and response[index:index+5] == "href=":
+                        htmlurl = 1
+                        index = index + 5 
+                        continue
 
-                if htmlstate == 1 and response[index-1] == " " and response[index:index+5] == "src=":
-                    htmlurl = 1
-                    index = index + 4
-                    continue
+                    if htmlstate == 1 and response[index-1] == " " and response[index:index+5] == "src=":
+                        htmlurl = 1
+                        index = index + 4
+                        continue
 
-                # In case the url isn't correctly closed
-                if htmlurl == 1: 
-                    htmlurl = 0
+                    # In case the url isn't correctly closed
+                    if htmlurl == 1: 
+                        htmlurl = 0
 
-            # Move on
-            index = index +1
+                # Move on
+                index = index +1
 
-        # End of response parsing
-        return result
+            # End of response parsing
+            return result
+
+        else:
+            # No a taint payload
+            return None
             
     def run(self):
         """ Main code of the thread """
@@ -197,10 +204,8 @@ class Scanner(threading.Thread):
 
                 # Check every parameter 
                 for k, v in target.params.iteritems():
-                    seed_len = 4
-                    seed = ''.join(random.choice(string.ascii_letters + string.digits) for x in range(seed_len)).lower()
-                    taint = "{0}:{0} {0}=-->{0}\"{0}>{0}'{0}>{0}+{0}<{0}>".format(seed)
-                    url, data = target.getPayloadedUrl(k, taint)
+                    pl = Payload(taint=True)
+                    url, data = target.getPayloadedUrl(k, pl.payload)
                     # In case of proxy 
                     if self.engine.getOption('http-proxy') is not None:
                         proxy = ProxyHandler({'http': self.engine.getOption('http-proxy')})
@@ -230,9 +235,9 @@ class Scanner(threading.Thread):
                         print "[X] Scanner Error: unknown"
                         continue
                     else:
-                        result = self.processResponse(response, seed)
+                        result = self.processResponse(response, pl)
                         for r in result:
-                            self.results.append(Result(target, k, taint, r))
+                            self.results.append(Result(target, k, pl, r))
                 
                 # Scan complete
                 try:                

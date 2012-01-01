@@ -72,7 +72,7 @@ class Engine:
             for r in self.results:
                 r.printResult()
 
-    def crawlTarget(self):
+    def _crawlTarget(self):
         print "[+] Crawling links..."
 
         # Build a queue and start crawlers 
@@ -112,7 +112,7 @@ class Engine:
         for t in results:
             self.targets.append(t)
 
-    def crawlForms(self):
+    def _crawlForms(self):
         print "[+] Crawling for forms..."
          
         queue = self._getTargetsQueue()
@@ -151,18 +151,7 @@ class Engine:
         for t in results:
             self.targets.append(t)
 
-    def start(self):         
-        """
-        Eventually crawl links and form, then
-        spawn threads to handle the scanning
-        """
-        if self.getOption('crawl') is not None:
-            self.crawlTarget()
-
-        if self.getOption('forms') is not None:
-            self.crawlForms()
-        
-        start = time.time()
+    def _scanTargets(self):
         print "\n[+] Start scanning (%s threads)" % self.getOption('threads')
         
         threads = []
@@ -187,8 +176,7 @@ class Engine:
                 break
         
         queue.join()
-        print "[-] Scan completed in %s seconds" % (time.time() - start)
-
+        
         # Harvest results
         results = []
         for t in threads:
@@ -198,7 +186,25 @@ class Engine:
         # Add results to engine
         for r in results:
             self.results.append(r)
-        
+
+
+    def start(self):         
+        """
+        Eventually crawl links and form, then
+        spawn threads to handle the scanning
+        """
+        start = time.time()
+
+        if self.getOption('crawl'):
+            self._crawlTarget()
+
+        if self.getOption('forms'):
+            self._crawlForms()
+
+        self._scanTargets()
+
+        print "[-] Scan completed in %s seconds" % (time.time() - start)
+                        
         print "[+] Processing results..."
         if self._compactResults():
             self.printResults()
