@@ -7,6 +7,7 @@ except ImportError:
     print "    http://wwwsearch.sourceforge.net/mechanize/\n"
     exit()
 
+from collections import defaultdict
 import random
 import threading
 
@@ -20,6 +21,7 @@ class Crawler(threading.Thread):
         self.queue = queue
 
         self.results = []
+        self.errors = {}
 
         self.crawl_links = crawl_links
         self.crawl_forms = crawl_forms
@@ -39,19 +41,25 @@ class Crawler(threading.Thread):
          if self.engine.getOption('http-proxy') is not None:
             self.browser.set_proxies({'http': self.engine.getOption('http-proxy')})
 
+    def _addError(self, key, value):
+        if self.errors.has_key(key):
+            self.errors[key].append(value)
+        else:
+            self.errors[key] = [value]
+
     def _crawlLinks(self, target):
         # If UA is RANDOM we need to refresh browser's headers
         if self.engine.getOption("ua") is "RANDOM": self._setHeaders()
         
         try: self.browser.open(target.getAbsoluteUrl())
         except HTTPError, e:
-            print "[X] Crawler Error: %s on %s" % (e.code, target.getAbsoluteUrl())
+            self._addError(e.code, target.getAbsoluteUrl())
             return False 
         except URLError, e:
-            print "[X] Crawler Error: %s" % e.reason
+            self._addError(e.reason, target.getAbsoluteUrl())
             return False
         except:
-            print "[X] Crawler Error: unknown"
+            self._addError('Unknown', target.getAbsoluteUrl())
             return False
         else:
             try:
@@ -95,13 +103,13 @@ class Crawler(threading.Thread):
 
         try: self.browser.open(target.getAbsoluteUrl())
         except HTTPError, e:
-            print "[X] Crawler Error: %s on %s" % (e.code, target.getAbsoluteUrl())
-            return False
+            self._addError(e.code, target.getAbsoluteUrl())
+            return False 
         except URLError, e:
-            print "[X] Crawler Error: %s" % (e.reason)
+            self._addError(e.reason, target.getAbsoluteUrl())
             return False
         except:
-            print "[X] Crawler Error: unknown"
+            self._addError('Unknown', target.getAbsoluteUrl())
             return False
         else:
             try: 

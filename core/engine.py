@@ -100,13 +100,27 @@ class Engine:
 
         # Harvest results
         results = []
+        errors = {}
         for c in crawlers:
+            # results
             for r in c.results:
                 results.append(r)
+            # errors
+            for ek, ev in c.errors.iteritems():
+                if errors.has_key(ek):
+                    errors[ek] += ev
+                else:
+                    errors[ek] = ev
 
         results = set(results)
 
+        if errors:
+            print "[X] Crawl Errors:"
+            for ek, ev in errors.iteritems():
+                print "    %s times %s" % (len(ev), ek)
+
         print "[-] Found %s unique targets." % len(results)
+        
 
         # Add targets
         for t in results:
@@ -139,11 +153,24 @@ class Engine:
 
         # Harvest results
         results = []
+        errors = {}
         for c in crawlers:
+            # results
             for r in c.results:
                 results.append(r)
+            # errors
+            for ek, ev in c.errors.iteritems():
+                if errors.has_key(ek):
+                    errors[ek] += ev
+                else:
+                    errors[ek] = ev
 
         results = set(results)
+
+        if errors:
+            print "[X] Crawl Errors:"
+            for ek, ev in errors.iteritems():
+                print "    %s times %s" % (len(ev), ek)
 
         print "[-] Found %s unique forms." % len(results)
 
@@ -174,18 +201,31 @@ class Engine:
                 print "[X] Interrupt! Killing threads..."
                 queue = Queue.Queue()
                 break
-        
+
         queue.join()
         
         # Harvest results
         results = []
+        errors = {}
         for t in threads:
             for r in t.results:
                 results.append(r)
+            # errors
+            for ek, ev in t.errors.iteritems():
+                if errors.has_key(ek):
+                    errors[ek] += ev
+                else:
+                    errors[ek] = ev
 
         # Add results to engine
         for r in results:
             self.results.append(r)
+
+        if errors:
+            print "[X] Scan Errors:"
+            for ek, ev in errors.iteritems():
+                print "    %s times %s" % (len(ev), ek)
+
 
 
     def start(self):         
@@ -206,8 +246,9 @@ class Engine:
         print "[-] Scan completed in %s seconds" % (time.time() - start)
                         
         print "[+] Processing results..."
-        if self._compactResults():
-            self.printResults()
-            return True
-        else:
-            return False
+
+        self._compactResults()
+        self.printResults()
+        
+        return True
+        

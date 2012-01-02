@@ -22,16 +22,13 @@ class Target:
             self.params = parse_qs(urlparse(raw_url).query, True)
 
     def __eq__(self, other):
-        if self.getFullUrl() == other.getFullUrl():
-            if self.params.keys() == other.params.keys(): 
-                return True
-            else:
-                return False
+        if self.getFullUrl(clean=True).lower() == other.getFullUrl(clean=True).lower():
+            return True 
         else:
             return False
 
     def __hash__(self):
-        return hash(self.getFullUrl())
+        return hash(self.getFullUrl(clean=True).lower())
 
     def getAbsoluteUrl(self):
         """ 
@@ -53,8 +50,14 @@ class Target:
         url += "://" + self.netloc
         return url
 
-    def getFullUrl(self):
-        return self.getAbsoluteUrl() + urlencode(self.params)
+    def getFullUrl(self, clean=False):
+        if clean:
+            temp_params = {}
+            for k, v in self.params.iteritems():
+                temp_params[k] = ""
+            return self.getAbsoluteUrl() + urlencode(temp_params)
+        else:
+            return self.getAbsoluteUrl() + urlencode(self.params)
     
     def getPayloadedUrl(self, target_key, payload):
         """

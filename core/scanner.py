@@ -23,6 +23,13 @@ class Scanner(threading.Thread):
         self.engine = engine
 
         self.results = []
+        self.errors = {}
+
+    def _addError(self, key, value):
+        if self.errors.has_key(key):
+            self.errors[key].append(value)
+        else:
+            self.errors[key] = [value]
 
     def processResponse(self, response, payload):
         """
@@ -226,13 +233,13 @@ class Scanner(threading.Thread):
                         to = 10 if self.engine.getOption('http-proxy') is None else 20
                         response = urlopen(req, timeout=to)
                     except HTTPError, e:
-                        print "[X] Scanner Error: %s on %s" % (e.code, url)
-                        continue
+                        self._addError(e.code, target.getAbsoluteUrl())
+                        continue 
                     except URLError, e:
-                        print "[X] Scanner  Error: %s" % e.reason
+                        self._addError(e.reason, target.getAbsoluteUrl())
                         continue
                     except:
-                        print "[X] Scanner Error: unknown"
+                        self._addError('Unknown', target.getAbsoluteUrl())
                         continue
                     else:
                         result = self.processResponse(response, pl)
