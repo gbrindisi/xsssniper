@@ -16,7 +16,7 @@ class Target:
         self.netloc = urlparse(raw_url).netloc
         self.path = urlparse(raw_url).path
         self.method = method
-        if method is 'POST' and data is not None:
+        if data is not None:
             self.params = parse_qs(data, True)
         else:
             self.params = parse_qs(urlparse(raw_url).query, True)

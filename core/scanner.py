@@ -234,12 +234,13 @@ class Scanner(threading.Thread):
             # At this state injections in Result obj are not
             # compacted yet so it will only be 1st injected param
             url, data = r.target.getPayloadedUrl(r.first_param, "")
-
+            
             # In case of proxy 
             if self.engine.getOption('http-proxy') is not None:
                 proxy = ProxyHandler({'http': self.engine.getOption('http-proxy')})
                 opener = build_opener(proxy)
                 install_opener(opener)
+            
             # Some headers
             if self.engine.getOption('ua') is not None:
                 if self.engine.getOption('ua') is "RANDOM":
@@ -267,8 +268,8 @@ class Scanner(threading.Thread):
                 continue
             else:
                 result = self.processResponse(response.read().lower(), r.first_pl)
-
-                if result is not None:
+                
+                if len(result) is not 0:
                     # looks like it's stored
                     oldinjtype = r.injections[r.first_param]
                     oldinjtype[0][0][0] = "stored"
