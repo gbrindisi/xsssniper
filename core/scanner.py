@@ -266,15 +266,13 @@ class Scanner(threading.Thread):
                 self._addError('Unknown', target.getAbsoluteUrl())
                 continue
             else:
-                result = self.processResponse(response, r.first_pl)
+                result = self.processResponse(response.read().lower(), r.first_pl)
 
                 if result is not None:
                     # looks like it's stored
-                    print "stored %s" % result
-                    oldinjtype = r.injections[r.first_param][0]
-                    oldinjtype[0] = "stored"
-                    r.injections[r.first_param] = [oldinjtype, r.first_pl]
-                    r.printResult()
+                    oldinjtype = r.injections[r.first_param]
+                    oldinjtype[0][0][0] = "stored"
+                    r.injections[r.first_param] = oldinjtype
 
     def run(self):
         """ Main code of the thread """

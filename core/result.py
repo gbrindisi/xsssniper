@@ -13,16 +13,16 @@ class Result:
         self.first_param = injected_param
         self.first_pl = payload
         
-        self.injections = { injected_param: [injectiontype, payload] }
+        self.injections = { injected_param: [[injectiontype, payload]] }
 
     def printResult(self):
         print "\n[!] Target:\t%s" % self.target.getAbsoluteUrl()
         print "    Method:\t%s" % self.target.method
         print "    Query String:\t%s" % urlencode(self.target.params)
         for param, inj in self.injections.iteritems():
-            print "\t[%sx] Param:\t%s" % (len(self.injections[param]), param)
-            # for i in inj:
-                # print "\t     Type:\t%s" % i[0][1]
+            print "\t[%sx] Param:\t%s" % (len(inj), param)
+            for i in inj:
+                print "\t     Type:\t%s - %s" % (i[0][0], i[0][1]) 
        
         return True
 
