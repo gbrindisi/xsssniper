@@ -73,7 +73,7 @@ class Target:
         encoded_params = urlencode(new_params)
         
         # Target is POST
-        if self.method is 'POST':
+        if self.method  == "POST":
             return [self.getAbsoluteUrl(), encoded_params]
         else:
             # Target is GET

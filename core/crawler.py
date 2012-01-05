@@ -122,12 +122,18 @@ class Crawler(threading.Thread):
 
             for form in forms:
                 form_data = form.click_request_data()
+                
                 if form.method is "POST" and form_data[1] is None:
                     # If the post form has no data to send
                     continue
+                elif form.method is "GET" and form_data[1] is not None:
+                    # GET forms
+                    nt = Target(form_data[0]+"?"+form_data[1], method = form.method, data = None)
+                    self.results.append(nt)
                 else:
                     nt = Target(form_data[0], method = form.method, data = form_data[1])
                     self.results.append(nt)
+
 
     def run(self):
         while True:

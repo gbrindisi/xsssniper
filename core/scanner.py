@@ -43,7 +43,7 @@ class Scanner(threading.Thread):
         This is based on ratproxy XSS scanning technique so
         all the props to @lcamtuf for this.
         """
-
+        
         # It only works for payloads of type taint (temporary)
         if payload.taint:
             htmlstate = 0
@@ -56,6 +56,7 @@ class Scanner(threading.Thread):
             # cases when the payload is upper/lowercased by the webserver
             seed_len = payload.seed_len
             seed = payload.seed
+
             # htmlstate legend:
             # - 1 index is in tag
             # - 2 index is inside double quotes
@@ -194,6 +195,7 @@ class Scanner(threading.Thread):
         for k, v in target.params.iteritems():
             pl = Payload(taint=True)
             url, data = target.getPayloadedUrl(k, pl.payload)
+            
             # In case of proxy 
             if self.engine.getOption('http-proxy') is not None:
                 proxy = ProxyHandler({'http': self.engine.getOption('http-proxy')})
@@ -291,7 +293,7 @@ class Scanner(threading.Thread):
                     # print "[X] No paramaters to inject"
                     self.queue.task_done()
                     continue
-                
+               
                 self._performInjections(target)
                 self._checkStoredInjections()
                                 
