@@ -120,16 +120,14 @@ class Crawler(threading.Thread):
                 print "[X] Can't retrieve forms"
                 return False
 
-            new_targets = []
-
             for form in forms:
                 form_data = form.click_request_data()
-                new_targets.append([form_data[0], form_data[1]])
-    
-            for t in new_targets:
-                # Discard POST targets without data to inject
-                if t[1] is not None:
-                    self.results.append(Target(t[0], method = 'POST', data = t[1]))  
+                if form.method is "POST" and form_data[1] is None:
+                    # If the post form has no data to send
+                    continue
+                else:
+                    nt = Target(form_data[0], method = form.method, data = form_data[1])
+                    self.results.append(nt)
 
     def run(self):
         while True:
