@@ -56,9 +56,6 @@ class Scanner(threading.Thread):
             # cases when the payload is upper/lowercased by the webserver
             seed_len = payload.seed_len
             seed = payload.seed
-            response = response.read().lower()
-
-            # Now start the scanning
             # htmlstate legend:
             # - 1 index is in tag
             # - 2 index is inside double quotes
@@ -192,6 +189,93 @@ class Scanner(threading.Thread):
             # No a taint payload
             return None
             
+    def _performInjections(self, target):
+        # Check every parameter 
+        for k, v in target.params.iteritems():
+            pl = Payload(taint=True)
+            url, data = target.getPayloadedUrl(k, pl.payload)
+            # In case of proxy 
+            if self.engine.getOption('http-proxy') is not None:
+                proxy = ProxyHandler({'http': self.engine.getOption('http-proxy')})
+                opener = build_opener(proxy)
+                install_opener(opener)
+            # Some headers
+            if self.engine.getOption('ua') is not None:
+                if self.engine.getOption('ua') is "RANDOM":
+                    headers = {'User-Agent': random.choice(USER_AGENTS)}
+                else:
+                    headers = {'User-Agent': self.engine.getOption('ua')}
+            else:
+                headers = {}
+            if self.engine.getOption("cookie") is not None:
+                headers["Cookie"] = self.engine.getOption("cookie")
+
+            # Build the request
+            req = Request(url, data, headers)
+            try:
+                to = 10 if self.engine.getOption('http-proxy') is None else 20
+                response = urlopen(req, timeout=to)
+            except HTTPError, e:
+                self._addError(e.code, target.getAbsoluteUrl())
+                return
+            except URLError, e:
+                self._addError(e.reason, target.getAbsoluteUrl())
+                return
+            except:
+                self._addError('Unknown', target.getAbsoluteUrl())
+                return
+            else:
+                result = self.processResponse(response.read().lower(), pl)
+                for r in result:
+                    self.results.append(Result(target, k, pl, r))
+
+    def _checkStoredInjections(self):
+        for r in self.results:
+            # At this state injections in Result obj are not
+            # compacted yet so it will only be 1st injected param
+            url, data = r.target.getPayloadedUrl(r.first_param, "")
+
+            # In case of proxy 
+            if self.engine.getOption('http-proxy') is not None:
+                proxy = ProxyHandler({'http': self.engine.getOption('http-proxy')})
+                opener = build_opener(proxy)
+                install_opener(opener)
+            # Some headers
+            if self.engine.getOption('ua') is not None:
+                if self.engine.getOption('ua') is "RANDOM":
+                    headers = {'User-Agent': random.choice(USER_AGENTS)}
+                else:
+                    headers = {'User-Agent': self.engine.getOption('ua')}
+            else:
+                headers = {}
+            if self.engine.getOption("cookie") is not None:
+                headers["Cookie"] = self.engine.getOption("cookie")
+
+            # Build the request
+            req = Request(url, data, headers)
+            try:
+                to = 10 if self.engine.getOption('http-proxy') is None else 20
+                response = urlopen(req, timeout=to)
+            except HTTPError, e:
+                self._addError(e.code, target.getAbsoluteUrl())
+                continue 
+            except URLError, e:
+                self._addError(e.reason, target.getAbsoluteUrl())
+                continue
+            except:
+                self._addError('Unknown', target.getAbsoluteUrl())
+                continue
+            else:
+                result = self.processResponse(response, r.first_pl)
+
+                if result is not None:
+                    # looks like it's stored
+                    print "stored %s" % result
+                    oldinjtype = r.injections[r.first_param][0]
+                    oldinjtype[0] = "stored"
+                    r.injections[r.first_param] = [oldinjtype, r.first_pl]
+                    r.printResult()
+
     def run(self):
         """ Main code of the thread """
         while True:
@@ -208,44 +292,10 @@ class Scanner(threading.Thread):
                     # print "[X] No paramaters to inject"
                     self.queue.task_done()
                     continue
-
-                # Check every parameter 
-                for k, v in target.params.iteritems():
-                    pl = Payload(taint=True)
-                    url, data = target.getPayloadedUrl(k, pl.payload)
-                    # In case of proxy 
-                    if self.engine.getOption('http-proxy') is not None:
-                        proxy = ProxyHandler({'http': self.engine.getOption('http-proxy')})
-                        opener = build_opener(proxy)
-                        install_opener(opener)
-                    # Some headers
-                    if self.engine.getOption('ua') is not None:
-                        if self.engine.getOption('ua') is "RANDOM":
-                            headers = {'User-Agent': random.choice(USER_AGENTS)}
-                        else:
-                            headers = {'User-Agent': self.engine.getOption('ua')}
-                    else:
-                        headers = {}
-
-                    # Build the request
-                    req = Request(url, data, headers)
-                    try:
-                        to = 10 if self.engine.getOption('http-proxy') is None else 20
-                        response = urlopen(req, timeout=to)
-                    except HTTPError, e:
-                        self._addError(e.code, target.getAbsoluteUrl())
-                        continue 
-                    except URLError, e:
-                        self._addError(e.reason, target.getAbsoluteUrl())
-                        continue
-                    except:
-                        self._addError('Unknown', target.getAbsoluteUrl())
-                        continue
-                    else:
-                        result = self.processResponse(response, pl)
-                        for r in result:
-                            self.results.append(Result(target, k, pl, r))
                 
+                self._performInjections(target)
+                self._checkStoredInjections()
+                                
                 # Scan complete
                 try:                
                     self.queue.task_done()

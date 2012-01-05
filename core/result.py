@@ -10,7 +10,8 @@ class Result:
 
     def __init__(self, target, injected_param, payload, injectiontype):
         self.target = target
-
+        self.first_param = injected_param
+        self.first_pl = payload
         
         self.injections = { injected_param: [injectiontype, payload] }
 

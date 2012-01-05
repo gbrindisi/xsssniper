@@ -36,6 +36,8 @@ class Crawler(threading.Thread):
                 self.browser.addheaders = [('User-Agent', random.choice(USER_AGENTS))]
             else:
                 self.browser.addheaders = [('User-Agent', self.engine.getOption('ua'))]
+        if self.engine.getOption("cookie") is not None:
+            self.browser.addheaders = [("Cookie", self.engine.getOption("cookie"))]
     
     def _setProxies(self):
          if self.engine.getOption('http-proxy') is not None:

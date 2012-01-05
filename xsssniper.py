@@ -42,6 +42,7 @@ def main():
     parser.add_option("--forms", dest="forms", default=False, action="store_true", help="crawl target url looking for forms to test")
     parser.add_option("--user-agent", dest="user_agent", help="provide an user agent")
     parser.add_option("--random-agent", dest="random_agent", default=False, action="store_true", help="perform scan with random user agents")
+    parser.add_option("--cookie", dest="cookie", help="use a cookie to perform scans")
 
     (options, args) = parser.parse_args()
     if options.url is None: 
@@ -91,6 +92,10 @@ def main():
         s.addOption("ua", options.user_agent)
     elif options.random_agent is True:
         s.addOption("ua", "RANDOM")
+
+    # Cookies?
+    if options.cookie is not None:
+        s.addOption("cookie", options.cookie)
 
     # How many threads?
     s.addOption("threads", int(options.threads))
