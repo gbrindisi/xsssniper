@@ -31,7 +31,7 @@ class Result:
         if self.target ==  other.target:
             for param, value in other.injections.iteritems():
                 if self.injections.has_key(param):
-                    for elem in value[0]:
+                    for elem in value:
                         self.injections[param][0].append(elem)
                 else:
                     self.injections[param] = value
