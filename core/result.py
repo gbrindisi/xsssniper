@@ -21,8 +21,9 @@ class Result:
         print "    Query String:\t%s" % urlencode(self.target.params)
         for param, inj in self.injections.iteritems():
             print "\t[%sx] Param:\t%s" % (len(inj), param)
-            for i in inj:
-                print "\t     Type:\t%s - %s" % (i[0][0], i[0][1]) 
+            for k, i in enumerate(inj):
+                #print "\t     Type:\t%s - %s" % (i[k][0], i[k][1]) 
+                print i
        
         return True
 
@@ -30,7 +31,8 @@ class Result:
         if self.target ==  other.target:
             for param, value in other.injections.iteritems():
                 if self.injections.has_key(param):
-                    self.injections[param].append(value)
+                    for elem in value[0]:
+                        self.injections[param][0].append(elem)
                 else:
                     self.injections[param] = value
             return True

@@ -49,6 +49,10 @@ class Engine:
 
         self.results = temp_results
         return True
+    
+    def _compactTargets(self):
+        self.targets = list(set(self.targets))
+        return True
 
     def addOption(self, key, value):
         if key in self.config:
@@ -241,6 +245,8 @@ class Engine:
         if self.getOption('forms'):
             self._crawlForms()
 
+        self._compactTargets()    
+        
         self._scanTargets()
 
         print "[-] Scan completed in %s seconds" % (time.time() - start)
