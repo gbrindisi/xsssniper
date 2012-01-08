@@ -22,9 +22,7 @@ class Result:
         for param, inj in self.injections.iteritems():
             print "\t[%sx] Param:\t%s" % (len(inj), param)
             for k, i in enumerate(inj):
-                #print "\t     Type:\t%s - %s" % (i[k][0], i[k][1]) 
-                print i
-       
+                print "\t     Type:\t%s - %s" % (i[0][0], i[0][1]) 
         return True
 
     def merge(self, other):
@@ -32,7 +30,7 @@ class Result:
             for param, value in other.injections.iteritems():
                 if self.injections.has_key(param):
                     for elem in value:
-                        self.injections[param][0].append(elem)
+                        self.injections[param].append(elem)
                 else:
                     self.injections[param] = value
             return True
