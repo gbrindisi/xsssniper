@@ -180,8 +180,10 @@ class DOMScanner(threading.Thread):
     def _analyzeJavascript(self):
          for js in self.javascript:
              print "Analyzing %s" % js[0]
-             for pattern in re.finditer(SOURCES_RE, js[1]):
-                 print pattern.group()
+             for k, line in enumerate(js[1].split("\n")):
+                for pattern in re.finditer(SOURCES_RE, line):
+                    #print pattern.group()
+                    print "[%s] - %s" % (k, line)
 
     def run(self):
         """ Main code of the thread """
