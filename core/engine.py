@@ -21,6 +21,7 @@ from core.result import Result
 from core.crawler import Crawler
 from core.constants import USER_AGENTS
 from core.scanner import Scanner
+from core.domscanner import DOMScanner
 
 class Engine:
     def __init__(self, target = None):
@@ -230,7 +231,57 @@ class Engine:
             for ek, ev in errors.iteritems():
                 print "    %s times %s" % (len(ev), ek)
 
+    def _scanDOMTargets(self):
+        print "\n[+] Start scanning DOM (%s threads)" % self.getOption('threads')
+        
+        threads = []
+        queue = self._getTargetsQueue()
+        for i in range(min(self.getOption('threads'), len(self.targets))):
+            t = DOMScanner(self, queue)
+            t.setDaemon(True)
+            threads.append(t)
+            t.start()
+      
+        # Little hack to kill threads on SIGINT
+        while True:
+            try:
+                if queue.empty() is True:
+                    print "\n"
+                    break
+                sys.stdout.write("\r    Remaining urls: %s" % queue.qsize())
+                sys.stdout.flush()
+            except KeyboardInterrupt:
+                print "[X] Interrupt! Killing threads..."
+                queue = Queue.Queue()
+                break
 
+        queue.join()
+        print "done"
+        
+        """
+        # Harvest results
+        results = []
+        errors = {}
+        for t in threads:
+            for r in t.results:
+                results.append(r)
+            # errors
+            for ek, ev in t.errors.iteritems():
+                if errors.has_key(ek):
+                    errors[ek] += ev
+                else:
+                    errors[ek] = ev
+
+        # Add results to engine
+        for r in results:
+            self.results.append(r)
+
+        if errors:
+            print "[X] Scan Errors:"
+            for ek, ev in errors.iteritems():
+                print "    %s times %s" % (len(ev), ek)
+        """
+       
 
     def start(self):         
         """
@@ -247,6 +298,7 @@ class Engine:
 
         self._compactTargets()    
         
+        #self._scanDOMTargets()
         self._scanTargets()
 
         print "[-] Scan completed in %s seconds" % (time.time() - start)

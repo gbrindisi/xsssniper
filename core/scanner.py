@@ -276,7 +276,7 @@ class Scanner(threading.Thread):
                     oldinjtype = r.injections[r.first_param]
                     oldinjtype[0][0][0] = "stored"
                     r.injections[r.first_param] = oldinjtype
-
+    
     def run(self):
         """ Main code of the thread """
         while True:
