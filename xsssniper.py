@@ -15,7 +15,7 @@ db    db .d8888. .d8888.      .d8888. d8b   db d888888b d8888b. d88888b d8888b.
 .8P  Y8. db   8D db   8D      db   8D 88  V888   .88.   88      88.     88 `88. 
 YP    YP `8888Y' `8888Y'      `8888Y' VP   V8P Y888888P 88      Y88888P 88   YD
 
-----[ version 0.7                         Gianluca Brindisi <g@brindi.si> ]----
+----[ version 0.8                         Gianluca Brindisi <g@brindi.si> ]----
                                                      https://brindi.si/g/ ]----
 
  -----------------------------------------------------------------------------
@@ -32,7 +32,6 @@ def main():
 
     parser = OptionParser(usage=usage)
     parser.add_option("-u", "--url", dest="url", help="target URL")
-    parser.add_option("-t", "--type", dest="type", default=1, help="XSS type: 1 reflected, 2 stored")
     parser.add_option("--post", dest="post", default=False, action="store_true", help="try a post request to target url")
     parser.add_option("--data", dest="post_data", help="posta data to use")
     parser.add_option("--threads", dest="threads", default=1, help="number of threads")

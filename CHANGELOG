@@ -1,3 +1,12 @@
+0.8:
+- Added basic dom xss detection with --dom
+
+0.7:
+- Added support for cookies with --cookie
+- Improved GET forms handling
+- Improved results printing
+- Improved stored xss checks 
+
 0.6:
 - Added support for custom user agent with --user-agent
 - Added support for random user agents with --random-agents

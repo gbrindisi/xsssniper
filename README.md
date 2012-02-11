@@ -9,7 +9,6 @@ xsssniper is an handy xss discovery tool with mass scanning functionalities.
     Options:
       -h, --help            show this help message and exit
       -u URL, --url=URL     target URL
-      -t TYPE, --type=TYPE  XSS type: 1 reflected, 2 stored
       --post                try a post request to target url
       --data=POST_DATA      posta data to use
       --threads=THREADS     number of threads
@@ -19,8 +18,11 @@ xsssniper is an handy xss discovery tool with mass scanning functionalities.
       --crawl               crawl target url for other links to test
       --forms               crawl target url looking for forms to test
       --user-agent=USER_AGENT
-                        provide an user agent
+                            provide an user agent
       --random-agent        perform scan with random user agents
+      --cookie=COOKIE       use a cookie to perform scans
+      --dom                 basic heuristic to detect dom xss
+
 
 ## EXAMPLES:
 
@@ -44,8 +46,13 @@ Mass scan an entire website forms included:
 
     $ python xsssniper.py -u "http://target.com" --crawl --forms
 
+Analyze target page javascripts (embedded and linked) to search for common sinks and sources:
+    
+    $ python xsssniper.py -u "http://target.com" --dom
+
 
 
 ##THANKS:
 
 * Miroslav Stamparm for the tips
+* Claudio Telmon
