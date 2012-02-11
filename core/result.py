@@ -8,12 +8,24 @@ class Result:
     Used to clean the Scanner and handle printing
     """
 
-    def __init__(self, target, injected_param, payload, injectiontype):
+    def __init__(self, 
+                 target, 
+                 injected_param,
+                 payload, 
+                 injectiontype,
+                 ):
         self.target = target
         self.first_param = injected_param
         self.first_pl = payload
         
         self.injections = { injected_param: [[injectiontype, payload]] }
+
+        # DOM Related stuff
+        self.js = js
+        self.js_url = js_url
+        # js_xss = [ (line_number, line) ... ]
+        self.js_xss = []
+        if js_xss is not None: self.js_xss.append(js_xss)
 
     def printResult(self):
         print "\n[!] Target:\t%s" % self.target.getAbsoluteUrl()
@@ -34,4 +46,5 @@ class Result:
                 else:
                     self.injections[param] = value
             return True
-        return False           
+        return False     
+        

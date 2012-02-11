@@ -9,7 +9,10 @@ import re
 import random
 import threading
 
+from core.javascript import Javascript
+
 SOURCES_RE = re.compile("""/(location\s*[\[.])|([.\[]\s*["']?\s*(arguments|dialogArguments|innerHTML|write(ln)?|open(Dialog)?|showModalDialog|cookie|URL|documentURI|baseURI|referrer|name|opener|parent|top|content|self|frames)\W)|(localStorage|sessionStorage|Database)/""")
+SINKS_RE = re.compile("""/((src|href|data|location|code|value|action)\s*["'\]]*\s*\+?\s*=)|((replace|assign|navigate|getResponseHeader|open(Dialog)?|showModalDialog|eval|evaluate|execCommand|execScript|setTimeout|setInterval)\s*["'\]]*\s*\()/""")
 
 class DOMScanner(threading.Thread):
     def __init__(self, engine, queue):
@@ -48,7 +51,7 @@ class DOMScanner(threading.Thread):
         if self.engine.getOption("ua") is "RANDOM": self._setHeaders() 
         
         url = target.getFullUrl()
-        print url
+        
         try:
             to = 10 if self.engine.getOption('http-proxy') is None else 20
             response = self.browser.open(url, timeout=to) #urlopen(req, timeout=to)
@@ -172,19 +175,28 @@ class DOMScanner(threading.Thread):
                     self._addError('Unknown', link)
                     continue
                 else:
-                    self.javascript.append([link, response.read()])
+                    j = Javascript(link, response.read())
+                    self.javascript.append(j)
                     
             for r in embedded:
-                if r is not "": self.javascript.append([target.getAbsoluteUrl(), r])
-           
+                if r is not "": 
+                    j = Javascript(target.getAbsoluteUrl(), r, True)
+                    self.javascript.append(j)
+     
     def _analyzeJavascript(self):
          for js in self.javascript:
-             print "Analyzing %s" % js[0]
-             for k, line in enumerate(js[1].split("\n")):
+             #print "\n[+] Analyzing:\t %s" % js.link
+             for k, line in enumerate(js.body.split("\n")):
                 for pattern in re.finditer(SOURCES_RE, line):
-                    #print pattern.group()
-                    print "[%s] - %s" % (k, line)
-
+                    for grp in pattern.groups():
+                        if grp is None: continue
+                        js.addSource(k, grp) 
+                        #print "[Line: %s] Possible Source: %s" % (k, grp)
+                for pattern in re.finditer(SINKS_RE, line):
+                    for grp in pattern.groups():
+                        if grp is None: continue
+                        js.addSink(k, grp) 
+                        #print "[Line: %s] Possible Sink: %s" % (k, grp)
     def run(self):
         """ Main code of the thread """
         while True:
@@ -199,8 +211,7 @@ class DOMScanner(threading.Thread):
                 
                 self._parseJavascript(target)
                 self._analyzeJavascript()
-                print self.errors
-                                
+                
                 # Scan complete
                 try:                
                     self.queue.task_done()

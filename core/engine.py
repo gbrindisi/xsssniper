@@ -29,6 +29,8 @@ class Engine:
         if target is not None: self.targets.append(target)
         self.config = {}
         self.results = []
+        # Container for js analysis
+        self.javascript = []
 
     def _getTargetsQueue(self):
         queue = Queue.Queue()
@@ -76,6 +78,14 @@ class Engine:
             print "\n[!] Found XSS Injection points in %s targets" % len(self.results)
             for r in self.results:
                 r.printResult()
+
+        # Print javascript analysis
+        if len(self.javascript) == 0:
+            print "\n[X] No DOM XSS Found :("
+        else:
+            print "\n[!] Found possible dom xss in %s javascripts" % len(self.javascript)
+            for js in self.javascript:
+                js.printResult()
 
     def _crawlTarget(self):
         print "[+] Crawling links..."
@@ -232,7 +242,7 @@ class Engine:
                 print "    %s times %s" % (len(ev), ek)
 
     def _scanDOMTargets(self):
-        print "\n[+] Start scanning DOM (%s threads)" % self.getOption('threads')
+        print "\n[+] Start DOM scanning (%s threads)" % self.getOption('threads')
         
         threads = []
         queue = self._getTargetsQueue()
@@ -256,15 +266,13 @@ class Engine:
                 break
 
         queue.join()
-        print "done"
         
-        """
         # Harvest results
-        results = []
+        javascript = []
         errors = {}
         for t in threads:
-            for r in t.results:
-                results.append(r)
+            for r in t.javascript:
+                javascript.append(r)
             # errors
             for ek, ev in t.errors.iteritems():
                 if errors.has_key(ek):
@@ -273,14 +281,14 @@ class Engine:
                     errors[ek] = ev
 
         # Add results to engine
-        for r in results:
-            self.results.append(r)
+        for r in javascript:
+            if len(r.sources) > 0 | len(r.sinks) > 0:
+                self.javascript.append(r)
 
         if errors:
             print "[X] Scan Errors:"
             for ek, ev in errors.iteritems():
                 print "    %s times %s" % (len(ev), ek)
-        """
        
 
     def start(self):         
@@ -297,9 +305,11 @@ class Engine:
             self._crawlForms()
 
         self._compactTargets()    
-        
-        #self._scanDOMTargets()
+       
         self._scanTargets()
+        
+        if self.getOption('dom'):
+            self._scanDOMTargets()
 
         print "[-] Scan completed in %s seconds" % (time.time() - start)
                         

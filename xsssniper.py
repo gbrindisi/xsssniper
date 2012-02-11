@@ -43,6 +43,7 @@ def main():
     parser.add_option("--user-agent", dest="user_agent", help="provide an user agent")
     parser.add_option("--random-agent", dest="random_agent", default=False, action="store_true", help="perform scan with random user agents")
     parser.add_option("--cookie", dest="cookie", help="use a cookie to perform scans")
+    parser.add_option("--dom", dest="dom", default=False, action="store_true", help="Basic heuristic to detect dom xss")
 
     (options, args) = parser.parse_args()
     if options.url is None: 
@@ -96,6 +97,10 @@ def main():
     # Cookies?
     if options.cookie is not None:
         s.addOption("cookie", options.cookie)
+
+    # Dom scan?
+    if options.dom is True:
+        s.addOption("dom", options.dom)
 
     # How many threads?
     s.addOption("threads", int(options.threads))
