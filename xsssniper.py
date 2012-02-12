@@ -16,7 +16,7 @@ db    db .d8888. .d8888.      .d8888. d8b   db d888888b d8888b. d88888b d8888b.
 YP    YP `8888Y' `8888Y'      `8888Y' VP   V8P Y888888P 88      Y88888P 88   YD
 
 ----[ version 0.8                         Gianluca Brindisi <g@brindi.si> ]----
-                                                     https://brindi.si/g/ ]----
+                                                      http://brindi.si/g/ ]----
 
  -----------------------------------------------------------------------------
 | Scanning targets without prior mutual consent is illegal. It is the end     |
@@ -42,7 +42,7 @@ def main():
     parser.add_option("--user-agent", dest="user_agent", help="provide an user agent")
     parser.add_option("--random-agent", dest="random_agent", default=False, action="store_true", help="perform scan with random user agents")
     parser.add_option("--cookie", dest="cookie", help="use a cookie to perform scans")
-    parser.add_option("--dom", dest="dom", default=False, action="store_true", help="Basic heuristic to detect dom xss")
+    parser.add_option("--dom", dest="dom", default=False, action="store_true", help="basic heuristic to detect dom xss")
 
     (options, args) = parser.parse_args()
     if options.url is None: 
