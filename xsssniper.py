@@ -15,7 +15,7 @@ db    db .d8888. .d8888.      .d8888. d8b   db d888888b d8888b. d88888b d8888b.
 .8P  Y8. db   8D db   8D      db   8D 88  V888   .88.   88      88.     88 `88. 
 YP    YP `8888Y' `8888Y'      `8888Y' VP   V8P Y888888P 88      Y88888P 88   YD
 
-----[ version 0.8                         Gianluca Brindisi <g@brindi.si> ]----
+----[ version 0.8.1                        Gianluca Brindisi <g@brindi.si> ]----
                                                       http://brindi.si/g/ ]----
 
  -----------------------------------------------------------------------------
@@ -49,10 +49,6 @@ def main():
         parser.print_help() 
         exit()
 
-    # Type disclaimer
-    if options.type is not 1:
-        print "[X] Note: Actually only reflected XSS detection is supported. Sorry."
-         
     # Build a first target
     if options.post is True:
         if options.post_data is not None:
