@@ -260,13 +260,13 @@ class Scanner(threading.Thread):
                 to = 10 if self.engine.getOption('http-proxy') is None else 20
                 response = urlopen(req, timeout=to)
             except HTTPError, e:
-                self._addError(e.code, target.getAbsoluteUrl())
+                self._addError(e.code, r.target.getAbsoluteUrl())
                 continue 
             except URLError, e:
-                self._addError(e.reason, target.getAbsoluteUrl())
+                self._addError(e.reason, r.target.getAbsoluteUrl())
                 continue
             except:
-                self._addError('Unknown', target.getAbsoluteUrl())
+                self._addError('Unknown', r.target.getAbsoluteUrl())
                 continue
             else:
                 result = self.processResponse(response.read().lower(), r.first_pl)

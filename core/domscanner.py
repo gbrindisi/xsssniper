@@ -8,6 +8,8 @@ except ImportError:
 import re
 import random
 import threading
+import csv
+import os
 
 from core.javascript import Javascript
 
@@ -23,10 +25,12 @@ class DOMScanner(threading.Thread):
         self.errors = {}
         self.results = []
         self.javascript = []
+        self.whitelist = []
 
         self.browser = Browser()
         self._setProxies()
         self._setHeaders()
+        #self._getWhitelist()
 
     def _setHeaders(self):
         if self.engine.getOption('ua') is not None:
@@ -46,6 +50,13 @@ class DOMScanner(threading.Thread):
             self.errors[key].append(value)
         else:
             self.errors[key] = [value]
+
+    def _getWhitelist(self):
+        wl = csv.reader(open(os.getcwd() + "/lib/js-whitelist.csv", "rb"))
+        print wl
+        for js in wl:
+            self.whitelist.append(js[0])
+            print js[0]
 
     def _parseJavascript(self, target):
         if self.engine.getOption("ua") is "RANDOM": self._setHeaders() 

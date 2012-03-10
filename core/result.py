@@ -13,6 +13,9 @@ class Result:
                  injected_param,
                  payload, 
                  injectiontype,
+                 js = None,
+                 js_url = None,
+                 js_xss = None
                  ):
         self.target = target
         self.first_param = injected_param

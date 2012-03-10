@@ -198,6 +198,7 @@ class Engine:
         
         threads = []
         queue = self._getTargetsQueue()
+        
         for i in range(min(self.getOption('threads'), len(self.targets))):
             t = Scanner(self, queue)
             t.setDaemon(True)
@@ -306,10 +307,10 @@ class Engine:
 
         self._compactTargets()    
        
-        self._scanTargets()
-        
         if self.getOption('dom'):
             self._scanDOMTargets()
+        else:
+            self._scanTargets()
 
         print "[-] Scan completed in %s seconds" % (time.time() - start)
                         
