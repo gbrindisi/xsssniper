@@ -128,7 +128,7 @@ class Engine:
                     errors[ek] = ev
 
         results = set(results)
-
+        
         if errors:
             print "[X] Crawl Errors:"
             for ek, ev in errors.iteritems():
@@ -307,10 +307,10 @@ class Engine:
 
         self._compactTargets()    
        
+        self._scanTargets()
+        
         if self.getOption('dom'):
             self._scanDOMTargets()
-        else:
-            self._scanTargets()
 
         print "[-] Scan completed in %s seconds" % (time.time() - start)
                         

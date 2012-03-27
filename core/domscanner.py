@@ -54,7 +54,6 @@ class DOMScanner(threading.Thread):
     def _getWhitelist(self):
         path = os.path.split(os.path.realpath(__file__))[0]
         path = os.path.join(path, "../lib/whitelist.xml")
-        print path
         f = open(path, "rb")
         xml = f.read()
         root = etree.XML(xml)
