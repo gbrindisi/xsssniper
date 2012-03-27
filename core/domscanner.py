@@ -8,7 +8,7 @@ except ImportError:
 import re
 import random
 import threading
-import csv
+from lxml import etree
 import os
 
 from core.javascript import Javascript
@@ -30,7 +30,7 @@ class DOMScanner(threading.Thread):
         self.browser = Browser()
         self._setProxies()
         self._setHeaders()
-        #self._getWhitelist()
+        self._getWhitelist()
 
     def _setHeaders(self):
         if self.engine.getOption('ua') is not None:
@@ -52,12 +52,21 @@ class DOMScanner(threading.Thread):
             self.errors[key] = [value]
 
     def _getWhitelist(self):
-        wl = csv.reader(open(os.getcwd() + "/lib/js-whitelist.csv", "rb"))
-        print wl
-        for js in wl:
-            self.whitelist.append(js[0])
-            print js[0]
+        path = os.path.split(os.path.realpath(__file__))[0]
+        path = os.path.join(path, "../lib/whitelist.xml")
+        print path
+        f = open(path, "rb")
+        xml = f.read()
+        root = etree.XML(xml)
 
+        for element in root.iterfind("javascript"):
+            el = {
+                'hash' : element.find("hash").text,
+                'description': element.find("description").text,
+                'reference': element.find("reference").text
+                }
+            self.whitelist.append(el)
+        
     def _parseJavascript(self, target):
         if self.engine.getOption("ua") is "RANDOM": self._setHeaders() 
         
@@ -197,6 +206,20 @@ class DOMScanner(threading.Thread):
     def _analyzeJavascript(self):
          for js in self.javascript:
              #print "\n[+] Analyzing:\t %s" % js.link
+
+             # Check if the javascript is whitelisted
+             # and eventually skip the analysis
+             skip = False
+             for wl in self.whitelist:
+                 if wl["hash"] == js.js_hash:
+                     print "[-] Found a whitelisted script: %s" % wl["description"]
+                     skip = True
+                     break
+
+             if skip:
+                 continue
+
+
              for k, line in enumerate(js.body.split("\n")):
                 for pattern in re.finditer(SOURCES_RE, line):
                     for grp in pattern.groups():
@@ -208,6 +231,7 @@ class DOMScanner(threading.Thread):
                         if grp is None: continue
                         js.addSink(k, grp) 
                         #print "[Line: %s] Possible Sink: %s" % (k, grp)
+
     def run(self):
         """ Main code of the thread """
         while True:

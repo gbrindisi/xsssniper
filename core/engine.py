@@ -80,9 +80,9 @@ class Engine:
                 r.printResult()
 
         # Print javascript analysis
-        if len(self.javascript) == 0:
+        if self.getOption("dom") and len(self.javascript) == 0:
             print "\n[X] No DOM XSS Found :("
-        else:
+        elif self.getOption("dom"):
             print "\n[!] Found possible dom xss in %s javascripts" % len(self.javascript)
             for js in self.javascript:
                 js.printResult()
