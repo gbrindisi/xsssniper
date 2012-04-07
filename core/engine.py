@@ -89,7 +89,7 @@ class Engine:
                 js.printResult()
 
     def _crawlTarget(self):
-        print "[+] Crawling links..."
+        print "\n[+] Crawling links..."
 
         # Build a queue and start crawlers 
         queue = self._getTargetsQueue()
@@ -105,10 +105,10 @@ class Engine:
             try:
                 if queue.empty() is True:
                     break
-                sys.stdout.write("\r    Remaining targets: %s" % queue.qsize())
-                sys.stdout.flush()
+                #x sys.stdout.write("\r    Remaining targets: %s" % queue.qsize())
+                #sys.stdout.flush()
             except KeyboardInterrupt:
-                print "[X] Interrupt! Killing threads..."
+                print colored.red("\n[X] Interrupt! Killing threads...")
                 queue = Queue.Queue()
                 break
         
@@ -131,19 +131,20 @@ class Engine:
         results = set(results)
         
         if errors:
-            print "[X] Crawl Errors:"
+            print " |- " + colored.red("CRAWL ERRORS!")
             for ek, ev in errors.iteritems():
-                print "    %s times %s" % (len(ev), ek)
-
-        print "[-] Found %s unique targets." % len(results)
-        
+                print " ||-- %s times %s" % (len(ev), ek)
+        if len(results) > 0:
+            print " |- " + colored.green("SUCCESS: ") +  "Found %s unique targets." % len(results)
+        else:
+            print " |- " + colored.yellow("WARNING: ") + "No new targets found."
 
         # Add targets
         for t in results:
             self.targets.append(t)
 
     def _crawlForms(self):
-        print "[+] Crawling for forms..."
+        print "\n[+] Crawling for forms..."
          
         queue = self._getTargetsQueue()
         crawlers = []
@@ -158,10 +159,10 @@ class Engine:
             try:
                 if queue.empty() is True:
                     break
-                sys.stdout.write("\r    Remaining targets: %s" % queue.qsize())
-                sys.stdout.flush()
+                #sys.stdout.write("\r    Remaining targets: %s" % queue.qsize())
+                #sys.stdout.flush()
             except KeyboardInterrupt:
-                print "[X] Interrupt! Killing threads..."
+                print "\n[X] Interrupt! Killing threads..."
                 queue = Queue.Queue()
                 break
         
@@ -184,11 +185,14 @@ class Engine:
         results = set(results)
 
         if errors:
-            print "[X] Crawl Errors:"
+            print " |- " + colored.red("CRAWL ERRORS!")
             for ek, ev in errors.iteritems():
-                print "    %s times %s" % (len(ev), ek)
+                print " ||- %s times %s" % (len(ev), ek)
 
-        print "[-] Found %s unique forms." % len(results)
+        if len(results) > 0:
+            print " |- " + colored.green("SUCCESS: ") + "Found %s unique forms." % len(results)
+        else:
+            print " |- " + colored.yellow("WARNING: ") + "No forms found."
 
         # Add targets
         for t in results:
@@ -210,7 +214,6 @@ class Engine:
         while True:
             try:
                 if queue.empty() is True:
-                    print "\n"
                     break
                 sys.stdout.write("\r    Remaining urls: %s" % queue.qsize())
                 sys.stdout.flush()
@@ -239,9 +242,9 @@ class Engine:
             self.results.append(r)
 
         if errors:
-            print "[X] Scan Errors:"
+            print " |- " + colored.red("SCAN ERRORS!")
             for ek, ev in errors.iteritems():
-                print "    %s times %s" % (len(ev), ek)
+                print " ||- %s times %s" % (len(ev), ek)
 
     def _scanDOMTargets(self):
         print "\n[+] Start DOM scanning (%s threads)" % self.getOption('threads')
@@ -258,10 +261,9 @@ class Engine:
         while True:
             try:
                 if queue.empty() is True:
-                    print "\n"
                     break
-                sys.stdout.write("\r    Remaining urls: %s" % queue.qsize())
-                sys.stdout.flush()
+                #sys.stdout.write("\r    Remaining urls: %s" % queue.qsize())
+                #sys.stdout.flush()
             except KeyboardInterrupt:
                 print "[X] Interrupt! Killing threads..."
                 queue = Queue.Queue()
@@ -288,9 +290,9 @@ class Engine:
                 self.javascript.append(r)
 
         if errors:
-            print "[X] Scan Errors:"
+            print " |- " + colored.red("SCAN ERRORS!")
             for ek, ev in errors.iteritems():
-                print "    %s times %s" % (len(ev), ek)
+                print " ||- %s times %s" % (len(ev), ek)
        
 
     def start(self):         

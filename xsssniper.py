@@ -73,9 +73,10 @@ def main():
             exit()
 
     # Build a first target
-    print "[+] Target: %s" % options.url
+    print "[+] TARGET: %s" % options.url
 
     if options.post is True:
+        print " |- METHOD: POST"
         if options.post_data is not None:
             print " |- POST data: %s" % options.post_data
             t = Target(options.url, method = 'POST', data = options.post_data)
@@ -83,6 +84,7 @@ def main():
             print " |- " + colored.red("ERROR: ") + "No POST data specified: use --data"
             exit()
     else:
+        print " |- METHOD: GET"
         t = Target(options.url)
 
     # Build a scanner
