@@ -22,6 +22,7 @@ from core.crawler import Crawler
 from core.constants import USER_AGENTS
 from core.scanner import Scanner
 from core.domscanner import DOMScanner
+from core.packages.clint.textui import colored, progress
 
 class Engine:
     def __init__(self, target = None):

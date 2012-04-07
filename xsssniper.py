@@ -69,17 +69,18 @@ def main():
             print " |- " + colored.green("Updated to rev: %s" % repo.hg_rev())
             exit()
         except Exception:
-            print " |- " + colored.red(" Can't retrieve updates")
+            print " |- " + colored.red("ERROR: ") + "Can't retrieve updates"
             exit()
 
     # Build a first target
+    print "[+] Target: %s" % options.url
+
     if options.post is True:
-        print "[+] Target: %s" % options.url
         if options.post_data is not None:
             print " |- POST data: %s" % options.post_data
             t = Target(options.url, method = 'POST', data = options.post_data)
         else:
-            print " |- " + colored.red("No POST data specified: use --data")
+            print " |- " + colored.red("ERROR: ") + "No POST data specified: use --data"
             exit()
     else:
         t = Target(options.url)
