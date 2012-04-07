@@ -11,6 +11,7 @@ except ImportError:
 from optparse import OptionParser
 from core.target import Target
 from core.engine import Engine
+from core.packages.clint.textui import colored 
 
 def banner():
     print """
@@ -31,7 +32,7 @@ YP    YP `8888Y' `8888Y'      `8888Y' VP   V8P Y888888P 88      Y88888P 88   YD
 | Authors assume no liability and are not responsible for any misuse or       | 
 | damage caused by this program.                                              |
  -----------------------------------------------------------------------------
-    """ 
+    """
 
 def main():
     banner()
@@ -60,23 +61,25 @@ def main():
     # Check for updates
     if options.update is True:
         try:
-            print "[!] Checking for updates...\n"
+            print "[+] Checking for updates..."
             path = os.path.split(os.path.realpath(__file__))[0]
             repo = hgapi.Repo(path)
-            print repo.hg_command("pull")
-            print repo.hg_update("tip")
-            print "[!] Updated to rev: %s" % repo.hg_rev()
+            #print repo.hg_command("pull")
+            #print repo.hg_update("tip")
+            print " |- " + colored.green("Updated to rev: %s" % repo.hg_rev())
             exit()
         except Exception:
-            print "[X] Can't retrieve updates\n"
+            print " |- " + colored.red(" Can't retrieve updates")
             exit()
 
     # Build a first target
     if options.post is True:
+        print "[+] Target: %s" % options.url
         if options.post_data is not None:
+            print " |- POST data: %s" % options.post_data
             t = Target(options.url, method = 'POST', data = options.post_data)
         else:
-            print "[X] No POST data specified: use --data"
+            print " |- " + colored.red("No POST data specified: use --data")
             exit()
     else:
         t = Target(options.url)
@@ -86,13 +89,29 @@ def main():
 
     # Lets parse options for some proxy setting
     if options.http_proxy is not None and options.tor is True:
-        print "[X] Yo dawg! I heard you like proxies so i put a proxy in your proxy..."
-        print "    (no --tor and --http-proxy together please!)"
+        print " |- " + colored.red("ERROR: ") + "no --tor and --http-proxy together!"
         exit()
     elif options.tor is False and options.http_proxy is not None:
         s.addOption("http-proxy", options.http_proxy)
+        print " |- PROXY: %s" % options.http_proxy
     elif options.tor is True:
         s.addOption("http-proxy", "127.0.0.1:8118")
+        print " |- PROXY: 127.0.0.1:8118"
+
+    # User Agent option provided?
+    if options.user_agent is not None and options.random_agent is True:
+        print " |- " + colored.red("ERROR: ") + "no --user-agent and --random-agent together!"
+    elif options.random_agent is False and options.user_agent is not None:
+        s.addOption("ua", options.user_agent)
+        print " |- USER-AGENT: %s" % options.user_agent
+    elif options.random_agent is True:
+        s.addOption("ua", "RANDOM")
+        print " |- USER-AGENT: RANDOM"
+
+    # Cookies?
+    if options.cookie is not None:
+        s.addOption("cookie", options.cookie)
+        print " |- COOKIE: %s" % options.cookie
 
     # Do you want to crawl?
     if options.crawl is True:
@@ -101,19 +120,6 @@ def main():
     # Do you want to crawl forms?
     if options.forms is True:
         s.addOption("forms", True)
-
-    # User Agent option provided?
-    if options.user_agent is not None and options.random_agent is True:
-        print "[X] Not sure what user agent you want..."
-        print "    (no --user-agent and --random-agent together please!)"
-    elif options.random_agent is False and options.user_agent is not None:
-        s.addOption("ua", options.user_agent)
-    elif options.random_agent is True:
-        s.addOption("ua", "RANDOM")
-
-    # Cookies?
-    if options.cookie is not None:
-        s.addOption("cookie", options.cookie)
 
     # Dom scan?
     if options.dom is True:
