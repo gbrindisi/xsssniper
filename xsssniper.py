@@ -12,6 +12,7 @@ from optparse import OptionParser
 from core.target import Target
 from core.engine import Engine
 from core.packages.clint.textui import colored 
+from core.cli import success, warning, error
 
 def banner():
     print """
@@ -40,17 +41,28 @@ def main():
 
     parser = OptionParser(usage=usage)
     parser.add_option("-u", "--url", dest="url", help="target URL")
-    parser.add_option("--post", dest="post", default=False, action="store_true", help="try a post request to target url")
+    parser.add_option("--post", dest="post", default=False, action="store_true",
+                      help="try a post request to target url")
     parser.add_option("--data", dest="post_data", help="posta data to use")
-    parser.add_option("--threads", dest="threads", default=1, help="number of threads")
-    parser.add_option("--http-proxy", dest="http_proxy", help="scan behind given proxy (format: 127.0.0.1:80)")
-    parser.add_option("--tor", dest="tor", default=False, action="store_true", help="scan behind default Tor")
-    parser.add_option("--crawl", dest="crawl", default=False, action="store_true", help="crawl target url for other links to test")
-    parser.add_option("--forms", dest="forms", default=False, action="store_true", help="crawl target url looking for forms to test")
-    parser.add_option("--user-agent", dest="user_agent", help="provide an user agent")
-    parser.add_option("--random-agent", dest="random_agent", default=False, action="store_true", help="perform scan with random user agents")
-    parser.add_option("--cookie", dest="cookie", help="use a cookie to perform scans")
-    parser.add_option("--dom", dest="dom", default=False, action="store_true", help="basic heuristic to detect dom xss")
+    parser.add_option("--threads", dest="threads", default=1, 
+                      help="number of threads")
+    parser.add_option("--http-proxy", dest="http_proxy", 
+                      help="scan behind given proxy (format: 127.0.0.1:80)")
+    parser.add_option("--tor", dest="tor", default=False, action="store_true", 
+                      help="scan behind default Tor")
+    parser.add_option("--crawl", dest="crawl", default=False, action="store_true", 
+                      help="crawl target url for other links to test")
+    parser.add_option("--forms", dest="forms", default=False, action="store_true", 
+                      help="crawl target url looking for forms to test")
+    parser.add_option("--user-agent", dest="user_agent", 
+                      help="provide an user agent")
+    parser.add_option("--random-agent", dest="random_agent", default=False, 
+                      action="store_true", 
+                      help="perform scan with random user agents")
+    parser.add_option("--cookie", dest="cookie", 
+                      help="use a cookie to perform scans")
+    parser.add_option("--dom", dest="dom", default=False, action="store_true", 
+                      help="basic heuristic to detect dom xss")
     parser.add_option("--update", dest="update", default=False, action="store_true", help="check for updates")
 
     (options, args) = parser.parse_args()
@@ -66,10 +78,12 @@ def main():
             repo = hgapi.Repo(path)
             #print repo.hg_command("pull")
             #print repo.hg_update("tip")
-            print " |- " + colored.green("Updated to rev: %s" % repo.hg_rev())
+            #print " |- " + colored.green("Updated to rev: %s" % repo.hg_rev())
+            success('Updated to rev %s' % repo.hg_rev(), ' |- ')
             exit()
         except Exception:
-            print " |- " + colored.red("ERROR: ") + "Can't retrieve updates"
+            error('Can\'t retrieve updates', ' |- ')
+            #print " |- " + colored.red("ERROR: ") + "Can't retrieve updates"
             exit()
 
     # Build a first target
@@ -81,7 +95,7 @@ def main():
             print " |- POST data: %s" % options.post_data
             t = Target(options.url, method = 'POST', data = options.post_data)
         else:
-            print " |- " + colored.red("ERROR: ") + "No POST data specified: use --data"
+            error('No POST data specified: use --data', ' |- ')
             exit()
     else:
         print " |- METHOD: GET"
@@ -92,7 +106,7 @@ def main():
 
     # Lets parse options for some proxy setting
     if options.http_proxy is not None and options.tor is True:
-        print " |- " + colored.red("ERROR: ") + "no --tor and --http-proxy together!"
+        error('No --tor and --http-proxy together!', ' |- ')
         exit()
     elif options.tor is False and options.http_proxy is not None:
         s.addOption("http-proxy", options.http_proxy)
@@ -103,7 +117,7 @@ def main():
 
     # User Agent option provided?
     if options.user_agent is not None and options.random_agent is True:
-        print " |- " + colored.red("ERROR: ") + "no --user-agent and --random-agent together!"
+        error('No --user-agent and --random-agent together!', ' |- ')
     elif options.random_agent is False and options.user_agent is not None:
         s.addOption("ua", options.user_agent)
         print " |- USER-AGENT: %s" % options.user_agent
