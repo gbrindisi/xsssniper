@@ -2,6 +2,9 @@
 
 from packages.clint.textui import colored
 
+def info(message, prefix, label=''):
+    print prefix + label + message
+
 def success(message, prefix, label='SUCCESS: '):
     print prefix + colored.green(label) + message
 

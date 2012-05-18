@@ -108,7 +108,7 @@ class Engine:
                 #x sys.stdout.write("\r    Remaining targets: %s" % queue.qsize())
                 #sys.stdout.flush()
             except KeyboardInterrupt:
-                print colored.red("\n[X] Interrupt! Killing threads...")
+                print"\n |- " + colored.yellow("INTERRUPT!") + " Killing threads..."
                 queue = Queue.Queue()
                 break
         
@@ -131,9 +131,9 @@ class Engine:
         results = set(results)
         
         if errors:
-            print " |- " + colored.red("CRAWL ERRORS!")
+            print " |-[+] " + colored.red("CRAWL ERRORS!")
             for ek, ev in errors.iteritems():
-                print " ||-- %s times %s" % (len(ev), ek)
+                print " |  |- %s times %s" % (len(ev), ek)
         if len(results) > 0:
             print " |- " + colored.green("SUCCESS: ") +  "Found %s unique targets." % len(results)
         else:
@@ -159,10 +159,10 @@ class Engine:
             try:
                 if queue.empty() is True:
                     break
-                #sys.stdout.write("\r    Remaining targets: %s" % queue.qsize())
-                #sys.stdout.flush()
+                sys.stderr.write("\r |- Remaining targets: %s" % queue.qsize())
+                sys.stderr.flush()
             except KeyboardInterrupt:
-                print "\n[X] Interrupt! Killing threads..."
+                print "\n |- " + colored.yellow("INTERRUPT!") + " Killing threads..."
                 queue = Queue.Queue()
                 break
         
@@ -185,9 +185,9 @@ class Engine:
         results = set(results)
 
         if errors:
-            print " |- " + colored.red("CRAWL ERRORS!")
+            print " |-[+] " + colored.red("CRAWL ERRORS!")
             for ek, ev in errors.iteritems():
-                print " ||- %s times %s" % (len(ev), ek)
+                print " |  |- %s times %s" % (len(ev), ek)
 
         if len(results) > 0:
             print " |- " + colored.green("SUCCESS: ") + "Found %s unique forms." % len(results)
@@ -215,10 +215,10 @@ class Engine:
             try:
                 if queue.empty() is True:
                     break
-                sys.stdout.write("\r    Remaining urls: %s" % queue.qsize())
-                sys.stdout.flush()
+                sys.stderr.write("\r |- Remaining urls: %s" % queue.qsize())
+                sys.stderr.flush()
             except KeyboardInterrupt:
-                print "[X] Interrupt! Killing threads..."
+                print "\r |- " + colored.yellow("INTERRUPT!") + " Killing threads..."
                 queue = Queue.Queue()
                 break
 
@@ -242,9 +242,9 @@ class Engine:
             self.results.append(r)
 
         if errors:
-            print " |- " + colored.red("SCAN ERRORS!")
+            print " |-[+] " + colored.red("SCAN ERRORS!")
             for ek, ev in errors.iteritems():
-                print " ||- %s times %s" % (len(ev), ek)
+                print " |  |- %s times %s" % (len(ev), ek)
 
     def _scanDOMTargets(self):
         print "\n[+] Start DOM scanning (%s threads)" % self.getOption('threads')
@@ -262,10 +262,10 @@ class Engine:
             try:
                 if queue.empty() is True:
                     break
-                #sys.stdout.write("\r    Remaining urls: %s" % queue.qsize())
-                #sys.stdout.flush()
+                sys.stderr.write("\r |- Remaining urls: %s" % queue.qsize())
+                sys.stderr.flush()
             except KeyboardInterrupt:
-                print "[X] Interrupt! Killing threads..."
+                print "\r |- " + colored.yellow("INTERRUPT!") + " Killing threads..."
                 queue = Queue.Queue()
                 break
 
@@ -290,9 +290,9 @@ class Engine:
                 self.javascript.append(r)
 
         if errors:
-            print " |- " + colored.red("SCAN ERRORS!")
+            print " |-[+] " + colored.red("SCAN ERRORS!")
             for ek, ev in errors.iteritems():
-                print " ||- %s times %s" % (len(ev), ek)
+                print " |  |- %s times %s" % (len(ev), ek)
        
 
     def start(self):         
@@ -317,9 +317,10 @@ class Engine:
 
         print "[-] Scan completed in %s seconds" % (time.time() - start)
                         
-        print "[+] Processing results..."
-
+        print "\n[+] Processing results..."
         self._compactResults()
+        print " |- Done."
+
         self.printResults()
         
         return True
