@@ -80,9 +80,9 @@ class Engine:
                 r.printResult()
 
         # Print javascript analysis
-        if len(self.javascript) == 0:
+        if self.getOption("dom") and len(self.javascript) == 0:
             print "\n[X] No DOM XSS Found :("
-        else:
+        elif self.getOption("dom"):
             print "\n[!] Found possible dom xss in %s javascripts" % len(self.javascript)
             for js in self.javascript:
                 js.printResult()
@@ -128,7 +128,7 @@ class Engine:
                     errors[ek] = ev
 
         results = set(results)
-
+        
         if errors:
             print "[X] Crawl Errors:"
             for ek, ev in errors.iteritems():
@@ -307,10 +307,10 @@ class Engine:
 
         self._compactTargets()    
        
+        self._scanTargets()
+        
         if self.getOption('dom'):
             self._scanDOMTargets()
-        else:
-            self._scanTargets()
 
         print "[-] Scan completed in %s seconds" % (time.time() - start)
                         

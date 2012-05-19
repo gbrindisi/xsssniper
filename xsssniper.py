@@ -1,6 +1,13 @@
 #/usr/bin/env python
 
 import os
+try:
+    import hgapi
+except ImportError:
+    print "\n[X] Please install hgapi module:"
+    print "   $ pip install \n"
+    exit()
+
 from optparse import OptionParser
 from core.target import Target
 from core.engine import Engine
@@ -15,7 +22,7 @@ db    db .d8888. .d8888.      .d8888. d8b   db d888888b d8888b. d88888b d8888b.
 .8P  Y8. db   8D db   8D      db   8D 88  V888   .88.   88      88.     88 `88. 
 YP    YP `8888Y' `8888Y'      `8888Y' VP   V8P Y888888P 88      Y88888P 88   YD
 
-----[ version 0.8.2                        Gianluca Brindisi <g@brindi.si> ]----
+----[ version 0.8.2                       Gianluca Brindisi <g@brindi.si> ]----
                                                       http://brindi.si/g/ ]----
 
  -----------------------------------------------------------------------------
@@ -24,7 +31,7 @@ YP    YP `8888Y' `8888Y'      `8888Y' VP   V8P Y888888P 88      Y88888P 88   YD
 | Authors assume no liability and are not responsible for any misuse or       | 
 | damage caused by this program.                                              |
  -----------------------------------------------------------------------------
-    """
+    """ 
 
 def main():
     banner()
@@ -43,11 +50,26 @@ def main():
     parser.add_option("--random-agent", dest="random_agent", default=False, action="store_true", help="perform scan with random user agents")
     parser.add_option("--cookie", dest="cookie", help="use a cookie to perform scans")
     parser.add_option("--dom", dest="dom", default=False, action="store_true", help="basic heuristic to detect dom xss")
+    parser.add_option("--update", dest="update", default=False, action="store_true", help="check for updates")
 
     (options, args) = parser.parse_args()
-    if options.url is None: 
+    if options.url is None and options.update is False: 
         parser.print_help() 
         exit()
+
+    # Check for updates
+    if options.update is True:
+        try:
+            print "[!] Checking for updates...\n"
+            path = os.path.split(os.path.realpath(__file__))[0]
+            repo = hgapi.Repo(path)
+            print repo.hg_command("pull")
+            print repo.hg_update("tip")
+            print "[!] Updated to rev: %s" % repo.hg_rev()
+            exit()
+        except Exception:
+            print "[X] Can't retrieve updates\n"
+            exit()
 
     # Build a first target
     if options.post is True:

@@ -1,15 +1,22 @@
 #/usr/bin/env python
 
+import hashlib
+
 class Javascript:
     """
     Used to represent a Javascript file and the result o it's
     analysis
     """
 
-    def __init__(self, link, body, is_embedded=False):
+    def __init__(self, link, body, js_hash=None, is_embedded=False):
         self.link = link
         self.body = body
         self.is_embedded = is_embedded
+        
+        # javascript fingerprinting
+        self.js_hash = js_hash
+        if self.js_hash is None:
+            self.js_hash = hashlib.md5(self.body).hexdigest()
 
         self.sources = []
         self.sinks = []
