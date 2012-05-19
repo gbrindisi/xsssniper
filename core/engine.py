@@ -32,6 +32,7 @@ class Engine:
         self.results = []
         # Container for js analysis
         self.javascript = []
+        self.wl_javascript = []
 
     def _getTargetsQueue(self):
         queue = Queue.Queue()
@@ -74,17 +75,24 @@ class Engine:
         Print every result
         """
         if len(self.results) == 0:
-            print "\n[X] No XSS Found :("
+            print "\n[+] " + colored.yellow("RESULT:") + " No XSS Found :("
         else:
-            print "\n[!] Found XSS Injection points in %s targets" % len(self.results)
+            print "\n[+] " + colored.green("RESULT:") + " Found XSS Injection points in " + colored.green("%s" % len(self.results)) + " targets"
+
             for r in self.results:
                 r.printResult()
 
         # Print javascript analysis
         if self.getOption("dom") and len(self.javascript) == 0:
-            print "\n[X] No DOM XSS Found :("
+            print "\n[+] " + colored.yeallow("RESULT:") + " No DOM XSS Found :("
+            if len(self.wl_javascript) != 0:
+                for wlj in self.wl_javascript:
+                    print " |- Found a whitelisted javascript: %s" % wlj["description"]
         elif self.getOption("dom"):
-            print "\n[!] Found possible dom xss in %s javascripts" % len(self.javascript)
+            print "\n[+] " + colored.green("RESULT:") + " Found possible dom xss in " + colored.green("%s" % len(self.javascript)) + " javascripts"
+            if len(self.wl_javascript) != 0:
+                for wlj in self.wl_javascript:
+                    print " |- Found a whitelisted javascript: %s" % wlj["description"]
             for js in self.javascript:
                 js.printResult()
 
@@ -131,9 +139,9 @@ class Engine:
         results = set(results)
         
         if errors:
-            print " |-[+] " + colored.red("CRAWL ERRORS!")
+            print " |--[+] " + colored.red("CRAWL ERRORS!")
             for ek, ev in errors.iteritems():
-                print " |  |- %s times %s" % (len(ev), ek)
+                print " |   |- %sx: %s" % (len(ev), ek)
         if len(results) > 0:
             print " |- " + colored.green("SUCCESS: ") +  "Found %s unique targets." % len(results)
         else:
@@ -159,7 +167,7 @@ class Engine:
             try:
                 if queue.empty() is True:
                     break
-                sys.stderr.write("\r |- Remaining targets: %s" % queue.qsize())
+                sys.stderr.write("\r |- Remaining targets: %s " % queue.qsize())
                 sys.stderr.flush()
             except KeyboardInterrupt:
                 print "\n |- " + colored.yellow("INTERRUPT!") + " Killing threads..."
@@ -185,9 +193,9 @@ class Engine:
         results = set(results)
 
         if errors:
-            print " |-[+] " + colored.red("CRAWL ERRORS!")
+            print " |--[+] " + colored.red("CRAWL ERRORS!")
             for ek, ev in errors.iteritems():
-                print " |  |- %s times %s" % (len(ev), ek)
+                print " |   |- %sx: %s" % (len(ev), ek)
 
         if len(results) > 0:
             print " |- " + colored.green("SUCCESS: ") + "Found %s unique forms." % len(results)
@@ -215,7 +223,7 @@ class Engine:
             try:
                 if queue.empty() is True:
                     break
-                sys.stderr.write("\r |- Remaining urls: %s" % queue.qsize())
+                sys.stderr.write("\r |- Remaining urls: %s " % queue.qsize())
                 sys.stderr.flush()
             except KeyboardInterrupt:
                 print "\r |- " + colored.yellow("INTERRUPT!") + " Killing threads..."
@@ -242,9 +250,9 @@ class Engine:
             self.results.append(r)
 
         if errors:
-            print " |-[+] " + colored.red("SCAN ERRORS!")
+            print " |--[+] " + colored.red("SCAN ERRORS!")
             for ek, ev in errors.iteritems():
-                print " |  |- %s times %s" % (len(ev), ek)
+                print " |   |- %sx: %s" % (len(ev), ek)
 
     def _scanDOMTargets(self):
         print "\n[+] Start DOM scanning (%s threads)" % self.getOption('threads')
@@ -262,7 +270,7 @@ class Engine:
             try:
                 if queue.empty() is True:
                     break
-                sys.stderr.write("\r |- Remaining urls: %s" % queue.qsize())
+                sys.stderr.write("\r |- Remaining urls: %s " % queue.qsize())
                 sys.stderr.flush()
             except KeyboardInterrupt:
                 print "\r |- " + colored.yellow("INTERRUPT!") + " Killing threads..."
@@ -272,11 +280,14 @@ class Engine:
         queue.join()
         
         # Harvest results
+        wl_javascript = []
         javascript = []
         errors = {}
         for t in threads:
             for r in t.javascript:
                 javascript.append(r)
+            for wlj in t.whitelisted_js:
+                wl_javascript.append(wlj)
             # errors
             for ek, ev in t.errors.iteritems():
                 if errors.has_key(ek):
@@ -288,11 +299,13 @@ class Engine:
         for r in javascript:
             if len(r.sources) > 0 | len(r.sinks) > 0:
                 self.javascript.append(r)
+        for wlj in wl_javascript:
+            self.wl_javascript.append(wlj)
 
         if errors:
-            print " |-[+] " + colored.red("SCAN ERRORS!")
+            print " |--[+] " + colored.red("SCAN ERRORS!")
             for ek, ev in errors.iteritems():
-                print " |  |- %s times %s" % (len(ev), ek)
+                print " |   |- %sx: %s" % (len(ev), ek)
        
 
     def start(self):         
@@ -315,7 +328,7 @@ class Engine:
         if self.getOption('dom'):
             self._scanDOMTargets()
 
-        print "[-] Scan completed in %s seconds" % (time.time() - start)
+        print " |- Scan completed in %s seconds." % (time.time() - start)
                         
         print "\n[+] Processing results..."
         self._compactResults()

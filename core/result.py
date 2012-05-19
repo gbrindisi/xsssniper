@@ -1,6 +1,7 @@
 #/usr/bin/env python
 
 from urllib import urlencode
+from core.packages.clint.textui import colored 
 
 class Result:
     """
@@ -31,13 +32,15 @@ class Result:
         if js_xss is not None: self.js_xss.append(js_xss)
 
     def printResult(self):
-        print "\n[!] Target:\t%s" % self.target.getAbsoluteUrl()
-        print "    Method:\t%s" % self.target.method
-        print "    Query String:\t%s" % urlencode(self.target.params)
+        print " |--[!] Target:\t%s" % self.target.getAbsoluteUrl()
+        print " |   |- Method:\t%s" % self.target.method
+        print " |   |- Query String:\t%s" % urlencode(self.target.params)
         for param, inj in self.injections.iteritems():
-            print "\t[%sx] Param:\t%s" % (len(inj), param)
+            print " |   |--[!] Param: %s" % param
+            print " |   |   |- # Injections: " + colored.green("%s" % len(inj))
             for k, i in enumerate(inj):
-                print "\t     Type:\t%s - %s" % (i[0][0], i[0][1]) 
+                print " |   |   |--#%s %s" % (k, i[0][1]) 
+        print " |   |"
         return True
 
     def merge(self, other):
