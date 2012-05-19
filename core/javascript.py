@@ -1,6 +1,7 @@
 #/usr/bin/env python
 
 import hashlib
+from core.packages.clint.textui import colored 
 
 class Javascript:
     """
@@ -31,14 +32,15 @@ class Javascript:
     
     def printResult(self):
         if len(self.sources) > 0 | len(self.sinks) > 0:
-            print "\n[+] Javascript:\t%s" % self.link
+            print " |--[!] Javascript: %s" % self.link
             if self.is_embedded:
-                print "[+]        \t(embedded)"
-            print "[-] Possible Sources:\t %s" % len(self.sources)
+                print " |   |- Type: embedded"
+            print " |   |--[+] # Possible Sources: " + colored.green("%s" % len(self.sources))
             for s in self.sources:
-                print "\t[%s] - %s" % (s[0], s[1])
-
-            print "[-] Possible Sinks:\t %s" % len(self.sinks)
+                print " |   |   |--[Line: %s] %s" % (s[0], s[1])
+            print " |   |"
+            print " |   |--[+] # Possible Sinks: " + colored.green("%s" % len(self.sinks))
             for s in self.sinks:
-                print "\t[%s] - %s" % (s[0], s[1])
+                print " |   |   |--[Line: %s] %s" % (s[0], s[1])
+            print " |   |"
             

@@ -25,6 +25,7 @@ class DOMScanner(threading.Thread):
         self.errors = {}
         self.results = []
         self.javascript = []
+        self.whitelisted_js = []
         self.whitelist = []
 
         self.browser = Browser()
@@ -211,7 +212,7 @@ class DOMScanner(threading.Thread):
              skip = False
              for wl in self.whitelist:
                  if wl["hash"] == js.js_hash:
-                     print "[-] Found a whitelisted script: %s" % wl["description"]
+                     self.whitelisted_js.append(wl)
                      skip = True
                      break
 

@@ -73,7 +73,7 @@ class Scanner(threading.Thread):
                     # type 1
                     if htmlstate == 1 and response[index+seed_len:index+seed_len+seed_len+1] == " " + seed + "=":
                         index = index + seed_len
-                        result.append([1, "In tag: <tag foo=bar onload=...>"])
+                        result.append([1, "Payload found inside tag"])
                         continue
 
                     # XSS found in url
@@ -81,7 +81,7 @@ class Scanner(threading.Thread):
                     # type 2
                     if htmlurl and response[index+seed_len:index+seed_len+seed_len+1] == ":" + seed:
                         index = index + seed_len
-                        result.append([2, "In url: <tag src=foo:bar ...>"])
+                        result.append([2, "Payload found inside url tag"])
                         continue
 
                     # XSS found freely in response
@@ -89,7 +89,7 @@ class Scanner(threading.Thread):
                     # type 3
                     if htmlstate == 0 and response[index+seed_len:index+seed_len+seed_len+1] == "<" + seed:
                         index  = index + seed_len
-                        result.append([3, "No filter evasion: <tag><script>..."])
+                        result.append([3, "Payload found free in html"])
                         continue
 
                     # XSS found inside double quotes
@@ -97,7 +97,7 @@ class Scanner(threading.Thread):
                     # type 4
                     if (htmlstate == 1 or htmlstate == 2) and response[index+seed_len:index+seed_len+seed_len] == "\"" + seed:
                         index = index + seed_len
-                        result.append([4, "Inside double quotes: <tag foo=\"bar\"onload=...>"])
+                        result.append([4, "Payload found inside tag escaped from double quotes"])
                         continue
 
                     # XSS found inside single quotes
@@ -105,7 +105,7 @@ class Scanner(threading.Thread):
                     # type 5
                     if (htmlstate == 1 or htmlstate == 4) and response[index+seed_len:index+seed_len+seed_len] == "'" + seed:
                         index  = index + seed_len
-                        result.append([5, "Inside signle quotes: <tag foo='bar'onload=...>"])
+                        result.append([5, "Payload found inside tag escaped from single quotes"])
                         continue
 
                 else:

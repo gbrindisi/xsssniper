@@ -145,6 +145,7 @@ class Crawler(threading.Thread):
                 except ValueError:
                     pass
             else:
+
                 if self.crawl_links:
                     self._crawlLinks(target)
                 if self.crawl_forms:
