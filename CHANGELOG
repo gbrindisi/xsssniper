@@ -1,3 +1,6 @@
+0.9:
+- Improved the command line interface
+
 0.8:
 - Added basic dom xss detection with --dom
 
