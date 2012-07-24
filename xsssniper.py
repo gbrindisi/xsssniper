@@ -63,28 +63,11 @@ def main():
                       help="use a cookie to perform scans")
     parser.add_option("--dom", dest="dom", default=False, action="store_true", 
                       help="basic heuristic to detect dom xss")
-    parser.add_option("--update", dest="update", default=False, action="store_true", help="check for updates")
 
     (options, args) = parser.parse_args()
-    if options.url is None and options.update is False: 
+    if options.url is None: 
         parser.print_help() 
         exit()
-
-    # Check for updates
-    if options.update is True:
-        try:
-            info('Checking for updates...', '[+] ')
-            print "[+] Checking for updates..."
-            path = os.path.split(os.path.realpath(__file__))[0]
-            repo = hgapi.Repo(path)
-            print repo.hg_command("pull")
-            print repo.hg_update("tip")
-            success('Updated to rev %s' % repo.hg_rev(), ' |- ')
-            exit()
-        except Exception:
-            error('Can\'t retrieve updates', ' |- ')
-            #print " |- " + colored.red("ERROR: ") + "Can't retrieve updates"
-            exit()
 
     # Build a first target
     print "[+] TARGET: %s" % options.url
