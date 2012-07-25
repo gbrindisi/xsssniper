@@ -84,7 +84,7 @@ class Engine:
 
         # Print javascript analysis
         if self.getOption("dom") and len(self.javascript) == 0:
-            print "\n[+] " + colored.yeallow("RESULT:") + " No DOM XSS Found :("
+            print "\n[+] " + colored.yellow("RESULT:") + " No DOM XSS Found :("
             if len(self.wl_javascript) != 0:
                 for wlj in self.wl_javascript:
                     print " |- Found a whitelisted javascript: %s" % wlj["description"]
