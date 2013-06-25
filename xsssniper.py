@@ -1,13 +1,6 @@
-#/usr/bin/env python
+#!/usr/bin/env python
 
 import os
-try:
-    import hgapi
-except ImportError:
-    print "\n[X] Please install hgapi module:"
-    print "   $ pip install \n"
-    exit()
-
 from optparse import OptionParser
 from core.target import Target
 from core.engine import Engine
