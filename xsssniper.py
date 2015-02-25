@@ -36,7 +36,7 @@ def main():
     parser.add_option("-u", "--url", dest="url", help="target URL")
     parser.add_option("--post", dest="post", default=False, action="store_true",
                       help="try a post request to target url")
-    parser.add_option("--data", dest="post_data", help="posta data to use")
+    parser.add_option("--data", dest="post_data", help="post data to use")
     parser.add_option("--threads", dest="threads", default=1, 
                       help="number of threads")
     parser.add_option("--http-proxy", dest="http_proxy", 

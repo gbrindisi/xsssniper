@@ -10,7 +10,7 @@ xsssniper is an handy xss discovery tool with mass scanning functionalities.
       -h, --help            show this help message and exit
       -u URL, --url=URL     target URL
       --post                try a post request to target url
-      --data=POST_DATA      posta data to use
+      --data=POST_DATA      post data to use
       --threads=THREADS     number of threads
       --http-proxy=HTTP_PROXY
                             scan behind given proxy (format: 127.0.0.1:80)
