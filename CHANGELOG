@@ -33,5 +33,3 @@
 0.2:
 - Added url crawling with --crawl
 - Added multi-threading url scanning with --threads
-
-
