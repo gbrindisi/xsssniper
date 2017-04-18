@@ -1,8 +1,8 @@
-#XSSSNIPER
+# XSSSNIPER
 
 xsssniper is an handy xss discovery tool with mass scanning functionalities.
 
-##Usage:
+## Usage:
 
     Usage: xsssniper.py [options]
 
@@ -50,7 +50,7 @@ Analyze target page javascripts (embedded and linked) to search for common sinks
     
     $ python xsssniper.py -u "http://target.com" --dom
 
-##Thanks:
+## Thanks:
 
 * Miroslav Stamparm 
 * Claudio Telmon
